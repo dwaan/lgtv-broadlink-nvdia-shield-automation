@@ -1,6 +1,6 @@
 'use strict';
 
-var broadlinksm = require('broadlinkjs-sm'),
+let broadlinksm = require('broadlinkjs-sm'),
 	broadlink = require('broadlinkjs'),
 	fs = require('fs'),
 	path = require('path'),
@@ -9,16 +9,54 @@ var broadlinksm = require('broadlinkjs-sm'),
 		url: 'ws://192.168.1.105:3000' // put your LG TV ip address
 	}),
 	spawn = require('child_process').spawn,
+	EventEmitter = require('events'),
+	devices = new EventEmitter(),
 	lg_device = null,
 	mp1 = new broadlinksm(),
 	mp1_device = null,
 	rmplus = new broadlink(),
 	rmplus_device = null,
 	adb = null,
-	active_nvidia_app = null;
+	shield_device = null,
+	active_nvidia_app = null
+;
+
+let app_stereo = {
+	list: [
+		"com.google.android.apps.mediashell",
+		"com.ionitech.airscreen",
+		"com.cloudmosa.puffinTV",
+		"com.android.chrome",
+		"com.nickonline.android.nickapp",
+		"com.nvidia.bbciplayer",
+		"com.google.android.youtube.tv",
+		"com.turner.cnvideoapp",
+		"com.webos.app.livetv",
+		"youtube.leanback.v4"
+	],
+	is_in_the_list: (app_name) => {
+		return app_stereo.list.includes(app_name);
+	}
+}
+
 
 console.log('\n\x1b[4mConnecting...\x1b[0m', "\n");
+devices.on('ready', (lg_device, mp1_device, rmplus_device, shield_device) => {
+	console.log("All device ready");
+});
+devices.on('notv', (lg_device, mp1_device, rmplus_device, shield_device) => {
+	console.log("TV is OFF");
+});
 
+let device_start = setInterval(() => {
+	if (lg_device != null && mp1_device != null && rmplus_device != null && shield_device != null) {
+		devices.emit('ready', lg_device, mp1_device, rmplus_device, shield_device);
+		clearInterval(device_start);
+	} else if (mp1_device != null && rmplus_device != null && shield_device != null) {
+		devices.emit('notv', lg_device, mp1_device, rmplus_device, shield_device);
+		clearInterval(device_start);
+	}
+}, 500);
 
 // Connect to Broadlink RM Plus
 rmplus.on("deviceReady", (dev) => {
@@ -34,56 +72,38 @@ rmplus.on("deviceReady", (dev) => {
 
 			if (lg_device != null) {
 				// Check LG TV Active app
-				if (lg_device.appId == "com.webos.app.livetv" || lg_device.appId == "youtube.leanback.v4") {
+				if (app_stereo.is_in_the_list(lg_device.appId)) {
 					// Set reciever mode to extra-stereo
 					dev.sendData(bufferFile("code/soundalc.bin"));
 					dev.sendData(bufferFile("code/soundstereo.bin"));
 					console.log("\x1b[36mRP\x1b[0m:", lg_device.appId, "-> \x1b[1mStereo Sound\x1b[0m");
-					console.log("\x1b[36mRP\x1b[0m: TV -> \x1b[1mOn\x1b[0m");
 				} else if (lg_device.appId == "com.webos.app.hdmi1") {
 					// Set reciever mode to extra-stereo
-					if(
-						active_nvidia_app == "com.google.android.apps.mediashell" ||
-						active_nvidia_app == "com.ionitech.airscreen" ||
-						active_nvidia_app == "com.cloudmosa.puffinTV" ||
-						active_nvidia_app == "com.android.chrome" ||
-						active_nvidia_app == "com.nickonline.android.nickapp" ||
-						active_nvidia_app == "com.nvidia.bbciplayer" ||
-						active_nvidia_app == "com.google.android.youtube.tv" ||
-						active_nvidia_app == "com.turner.cnvideoapp"
-					) {
+					if(app_stereo.is_in_the_list(active_nvidia_app)) {
 						// Set reciever mode to extra-stereo
 						dev.sendData(bufferFile("code/soundalc.bin"));
 						dev.sendData(bufferFile("code/soundstereo.bin"));
 						console.log("\x1b[36mRP\x1b[0m:", lg_device.appId, "-> \x1b[1mStereo Sound\x1b[0m");
-						console.log("\x1b[36mRP\x1b[0m: TV -> \x1b[1mOn\x1b[0m");
 					} else {
 						// Set reciever mode to auto surround sound
 						dev.sendData(bufferFile("code/soundalc.bin"));
 						dev.sendData(bufferFile("code/soundauto.bin"));
 						console.log("\x1b[36mRP\x1b[0m:", lg_device.appId, "-> \x1b[1mSurround Sound\x1b[0m");
-						console.log("\x1b[36mRP\x1b[0m: TV -> \x1b[1mOn\x1b[0m");
 					}
 				} else {
 					// Set reciever mode to auto surround sound
 					dev.sendData(bufferFile("code/soundalc.bin"));
 					dev.sendData(bufferFile("code/soundauto.bin"));
 					console.log("\x1b[36mRP\x1b[0m:", lg_device.appId, "-> \x1b[1mSurround Sound\x1b[0m");
-					console.log("\x1b[36mRP\x1b[0m: TV -> \x1b[1mOn\x1b[0m");
 				}
 			}
 		});
 	}
 });
-
 rmplus.discover();
 
 
-
 // Connect to Broadlink MP1
-
-mp1.discover();
-
 mp1.on("deviceReady", (dev) => {
 	if (dev.type == "MP1") {
 		var status = [];
@@ -96,7 +116,7 @@ mp1.on("deviceReady", (dev) => {
 			if(lg_device != null) {
 				// When TV is on turn on switch #3 but with a bit of delay
 				// so TV turn off sound didn't cutted
-				setTimeout(function() {
+				setTimeout(() => {
 					if (lg_device.appId != "")  {
 						if(!status_array[2]) {
 							console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[1mON\x1b[0m")
@@ -113,50 +133,54 @@ mp1.on("deviceReady", (dev) => {
 		});
 	}
 });
+mp1.discover();
+
 
 // Connect to Shield
-
 adb = spawn('adb', ['connect', '192.168.1.106']);  // put your NVIDIA Shield ip address
-
 adb.stdout.on('data', (data) => {
+	shield_device = true;
 	console.log("\x1b[32mNS\x1b[0m: \x1b[1mConnected\x1b[0m");
 });
-
 adb.stderr.on('data', (data) => {
 	console.log("\x1b[32mNS\x1b[0m: \x1b[2mNot Connected\x1b[0m");
 });
-
+// Periodically check current active app in Shield
 setInterval(() => {
-	if (lg_device.appId == 'com.webos.app.hdmi1') {
-		exec('adb shell dumpsys window | grep -E mFocusedWindow', (err, stdout, stderr) => {
-			var result = stdout.split(" u0 ");
-			// Sometimes the result is empty
-			if (result != "") {
-				result = result[1].split("/");
-				result = result[0];
+	// Only run when input is HDMI1
+	if (lg_device != null) {
+		if (lg_device.appId == 'com.webos.app.hdmi1') {
+			exec('adb shell dumpsys window | grep -E mFocusedWindow', (err, stdout, stderr) => {
+				var result = stdout.split(" u0 ");
+				// Sometimes the result is empty
+				if (result != "") {
+					result = result[1].split("/");
+					result = result[0];
 
-				if (active_nvidia_app != result) {
-					active_nvidia_app = result;
-					console.log("\x1b[32mNS\x1b[0m: Active App ->", active_nvidia_app);
-					if(rmplus_device != null) rmplus_device.checkData();
+					if (active_nvidia_app != result) {
+						active_nvidia_app = result;
+						console.log("\x1b[32mNS\x1b[0m: Active App ->", active_nvidia_app);
+						if(rmplus_device != null) rmplus_device.checkData();
+					}
 				}
-			}
-		})
+			})
+		}
 	}
 }, 1000);
+// Periodically check if Shield wake up from network
+// Inser code
 
 
 // Connect to LG TV
-
-lgtv.on('connect', function () {
+lgtv.on('connect', () => {
 	console.log("\x1b[36mTV\x1b[0m: \x1b[1mConnected\x1b[0m");
 
-	lgtv.subscribe('ssap://audio/getVolume', function (err, res) {
+	lgtv.subscribe('ssap://audio/getVolume', (err, res) => {
 		if (res.changed && res.changed.indexOf('volume') !== -1) console.log('\x1b[36mTV\x1b[0m: Volume ->', res.volume);
 		if (res.changed && res.changed.indexOf('muted') !== -1) console.log('\x1b[36mTV\x1b[0m: Mute ->', res.muted);
 	});
 
-	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', function (err, res) {
+	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
 		lg_device = res;
 
 		// If input is Live TV and YouTube make Reciever sounds Stereo other is Surround Sound
@@ -179,15 +203,13 @@ lgtv.on('connect', function () {
 		}
 	});
 });
-
-lgtv.on('prompt', function () {
+// Prompt for security code
+lgtv.on('prompt', () => {
 	console.log('\x1b[36mTV\x1b[0m: Please authorize on LG TV');
 });
-
-lgtv.on('close', function () {
+lgtv.on('close', () => {
 	console.log('\x1b[36mTV\x1b[0m: Close');
 });
-
-lgtv.on('error', function (err) {
+lgtv.on('error', (err) => {
 	console.log(err);
 });
