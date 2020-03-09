@@ -1,7 +1,7 @@
 'use strict';
 
 var broadlinksm = require('broadlinkjs-sm'),
-	broadlink = require('../broadlinkjs'),
+	broadlink = require('broadlinkjs'),
 	fs = require('fs'),
 	path = require('path'),
 	exec = require('child_process').exec,

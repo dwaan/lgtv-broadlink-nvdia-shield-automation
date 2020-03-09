@@ -4,9 +4,9 @@
   "description": "",
   "main": "test.js",
   "dependencies": {
+    "broadlinkjs": "git+https://github.com/dwaan/broadlinkjs.git",
     "broadlinkjs-sm": "^0.1.5",
-    "lgtv2": "^1.4.1",
-    "broadlinkjs": "git+https://github.com/dwaan/broadlinkjs.git"
+    "lgtv2": "^1.4.1"
   },
   "scripts": {
     "test": "node test.js"
