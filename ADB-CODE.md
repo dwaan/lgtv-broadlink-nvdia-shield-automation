@@ -1,45 +1,71 @@
 # ADB Code
 
 
-*Screen status*
+**Screen status**
+
 `adb shell dumpsys power | grep 'mHoldingDisplaySuspendBlocker'`
 
-*Current App*
+
+**Current App**
+
 `adb shell dumpsys window windows | grep -E 'mCurrentFocus'`
+
 `adb shell dumpsys window | grep -E mFocusedWindow`
 
 
 ## Key events list
 
-*Sleep*
+
+**Sleep**
+
 `adb shell input keyevent KEYCODE_SLEEP`
 
-*Wake up*
+
+**Wake up**
+
 `adb shell input keyevent KEYCODE_WAKEUP`
 
-*Volume up*
+
+**Volume up**
+
 `adb shell input keyevent KEYCODE_VOLUME_UP`
 
-*Volume down*
+
+**Volume down**
+
 `adb shell input keyevent KEYCODE_VOLUME_DOWN`
 
-*Enter*
+
+**Enter**
+
 `adb shell input keyevent KEYCODE_ENTER`
 
-*Escape*
+
+**Escape**
+
 `adb shell input keyevent KEYCODE_ESCAPE`
 
-*Back*
+
+**Back**
+
 `adb shell input keyevent KEYCODE_BACK`
 
-*Home*
+
+**Home**
+
 `adb shell input keyevent KEYCODE_HOME`
 
-*Next*
+
+**Next**
+
 `adb shell input keyevent KEYCODE_MEDIA_NEXT`
 
-*Prev*
+
+**Prev**
+
 `adb shell input keyevent KEYCODE_MEDIA_PREV`
 
-*Play/Pause*
+
+**Play/Pause**
+
 `adb shell input keyevent KEYCODE_MEDIA_PLAY_PAUSE`

@@ -26,12 +26,9 @@ b.on("deviceReady", (dev) => {
 		});
 
 		setTimeout(function() {
-			console.log("");
-			console.log("Turning on Pioneer Power -> " + status[3]);
 			// Array index + 1
 			dev.set_power(4,0);
 			console.log("");
-			dev.exit();
 		}, 1000);
 	} else {
 		console.log(dev.type + "@" + dev.host.address + " found... not MP1!");
