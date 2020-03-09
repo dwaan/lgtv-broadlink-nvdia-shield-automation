@@ -1,10 +1,10 @@
 /*
 	usage:
 
-	When you want to learn a code, it might took several times for the correct code
+	When you want to learn a code, it might took several times before the correct code saved
 		node rmpro.js learn input-name
 
-	When you want to sendthe code
+	When you want to send the code
 		node rmpro.js send input-name
 */
 
@@ -18,7 +18,7 @@ var learn = process.argv[2];
 var file = process.argv[3];
 
 b.on("deviceReady", (dev) => {
-	if(dev.host.address == "192.168.1.103") {
+	if(dev.type == "DEVICE") {
 		console.log("Connected -> RM3 Pro+")
 		if (learn == "learn" || learn == "l") {
 			console.log("Waiting for input ->", file);
@@ -53,7 +53,6 @@ b.on("deviceReady", (dev) => {
 			}
 
 			console.log("Sending data ->", file);
-			dev.checkData();
 			dev.sendData(bufferFile("code/" + file + ".bin"));
 
 			var timer = setInterval(function(){
