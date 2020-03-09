@@ -1,5 +1,5 @@
 'use strict';
-let broadlink = require('./node_modules/broadlinkjs-sm');
+let broadlink = require('broadlinkjs-sm');
 let fs = require('fs');
 
 var b = new broadlink();

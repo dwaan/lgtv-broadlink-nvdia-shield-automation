@@ -1,7 +1,7 @@
 'use strict';
 
-var broadlink = require('./node_modules/broadlinkjs-sm'),
-	lgtv = require('./node_modules/lgtv2/index.js')({
+var broadlink = require('broadlinkjs-sm'),
+	lgtv = require('lgtv2/index.js')({
 		url: 'ws://192.168.1.105:3000' // put your LG TV ip address
 	}),
 	spawn = require('child_process').spawn,
