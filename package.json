@@ -1,0 +1,17 @@
+{
+  "name": "lgtv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "test.js",
+  "dependencies": {
+    "broadlinkjs": "^0.1.0",
+    "broadlinkjs-sm": "^0.1.5",
+    "lgtv2": "^1.4.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node test.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
