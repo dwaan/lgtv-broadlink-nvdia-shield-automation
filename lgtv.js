@@ -43,6 +43,8 @@ rmplus.on("deviceReady", (dev) => {
 				} else if (lg_device.appId == "com.webos.app.hdmi1") {
 					// Set reciever mode to extra-stereo
 					if(
+						active_nvidia_app == "com.google.android.apps.mediashell" ||
+						active_nvidia_app == "com.ionitech.airscreen" ||
 						active_nvidia_app == "com.cloudmosa.puffinTV" ||
 						active_nvidia_app == "com.android.chrome" ||
 						active_nvidia_app == "com.nickonline.android.nickapp" ||
