@@ -2,6 +2,7 @@
 
 let broadlinksm = require('broadlinkjs-sm'),
 	broadlink = require('broadlinkjs'),
+	nvidiaShieldAdb = require('nvidia-shield-adb'),
 	fs = require('fs'),
 	path = require('path'),
 	exec = require('child_process').exec,
@@ -32,6 +33,7 @@ let app_stereo = {
 		"com.google.android.youtube.tv",
 		"com.turner.cnvideoapp",
 		"com.webos.app.livetv",
+		"com.apple.android.music",
 		"youtube.leanback.v4"
 	],
 	is_in_the_list: (app_name) => {
@@ -47,7 +49,6 @@ devices.on('ready', (lg_device, mp1_device, rmplus_device, shield_device) => {
 devices.on('notv', (lg_device, mp1_device, rmplus_device, shield_device) => {
 	console.log("TV is OFF");
 });
-
 let device_start = setInterval(() => {
 	if (lg_device != null && mp1_device != null && rmplus_device != null && shield_device != null) {
 		devices.emit('ready', lg_device, mp1_device, rmplus_device, shield_device);
@@ -134,41 +135,6 @@ mp1.on("deviceReady", (dev) => {
 	}
 });
 mp1.discover();
-
-
-// Connect to Shield
-adb = spawn('adb', ['connect', '192.168.1.106']);  // put your NVIDIA Shield ip address
-adb.stdout.on('data', (data) => {
-	shield_device = true;
-	console.log("\x1b[32mNS\x1b[0m: \x1b[1mConnected\x1b[0m");
-});
-adb.stderr.on('data', (data) => {
-	console.log("\x1b[32mNS\x1b[0m: \x1b[2mNot Connected\x1b[0m");
-});
-// Periodically check current active app in Shield
-setInterval(() => {
-	// Only run when input is HDMI1
-	if (lg_device != null) {
-		if (lg_device.appId == 'com.webos.app.hdmi1') {
-			exec('adb shell dumpsys window | grep -E mFocusedWindow', (err, stdout, stderr) => {
-				var result = stdout.split(" u0 ");
-				// Sometimes the result is empty
-				if (result != "") {
-					result = result[1].split("/");
-					result = result[0];
-
-					if (active_nvidia_app != result) {
-						active_nvidia_app = result;
-						console.log("\x1b[32mNS\x1b[0m: Active App ->", active_nvidia_app);
-						if(rmplus_device != null) rmplus_device.checkData();
-					}
-				}
-			})
-		}
-	}
-}, 1000);
-// Periodically check if Shield wake up from network
-// Inser code
 
 
 // Connect to LG TV

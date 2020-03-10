@@ -6,7 +6,8 @@
   "dependencies": {
     "broadlinkjs": "git+https://github.com/dwaan/broadlinkjs.git",
     "broadlinkjs-sm": "^0.1.5",
-    "lgtv2": "^1.4.1"
+    "lgtv2": "^1.4.1",
+    "nvidia-shield-adb": "git+https://github.com/dwaan/nvidia-shield-adb.git"
   },
   "scripts": {
     "test": "node test.js"
