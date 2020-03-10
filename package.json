@@ -10,7 +10,7 @@
     "nvidia-shield-adb": "git+https://github.com/dwaan/nvidia-shield-adb.git"
   },
   "scripts": {
-    "test": "node test.js"
+    "test": "start.sh"
   },
   "author": "",
   "license": "ISC"
