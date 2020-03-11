@@ -99,7 +99,9 @@ rmplus.on("deviceReady", (dev) => {
 		devices.rmplus = dev;
 		devices.rmplus.sendCode = function() {
 			for (var i = 0; i < arguments.length; i++) {
-				dev.sendData(bufferFile("code/" + arguments[i] + ".bin"));
+				setTimeout(() => {
+					dev.sendData(bufferFile("code/" + arguments[i] + ".bin"));
+				}, 500);
 			}
 		}
 		devices.rmplus.checkData();
