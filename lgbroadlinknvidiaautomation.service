@@ -1,11 +1,16 @@
 [Unit]
-Description=My Service
+Description=Node.js LG TV, NVIDIA Shiled, and Broadlink connector
 After=network-online.target
-[Service] ExecStart=node lgtv.js
+
+[Service]
+Type=simple
+User=pi
 WorkingDirectory=/home/pi/Scripts/lgtv-broadlink-nvdia-shield-automation
+ExecStart=node lgtv.js
 StandardOutput=inherit
 StandardError=inherit
-Restart=always
-User=pi
+Restart=on-failure
+RestartSec=10
+
 [Install]
 WantedBy=multi-user.target

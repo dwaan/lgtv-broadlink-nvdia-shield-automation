@@ -1,5 +1,7 @@
 'use strict';
 
+const timestamp = false;
+
 let
 	fs = require('fs'),
 	path = require('path'),
@@ -21,9 +23,7 @@ let
 	broadlink = require('broadlinkjs'),
 	// Costume vars
 	rmplus = new broadlink(),
-	devices = {},
-	active_nvidia_app = null,
-	current_sound_mode = null
+	devices = {}
 ;
 
 let app_stereo = [
@@ -61,7 +61,8 @@ function getDateTime() {
     var day  = date.getDate();
     day = (day < 10 ? "0" : "") + day;
 
-    return year + ":" + month + ":" + day + ":" + hour + ":" + min + ":" + sec;
+    if (timestamp) return year + ":" + month + ":" + day + ":" + hour + ":" + min + ":" + sec;
+    else return "";
 }
 
 
@@ -82,6 +83,7 @@ console.log('\n\x1b[4mConnecting...\x1b[0m', "\n");
 shield.connect();
 shield.on('ready', function() {
 	devices.shield = this;
+	devices.shield.hdmi = "com.webos.app.hdmi1";
 	console.log("\x1b[32mNS\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 });
 
@@ -158,24 +160,18 @@ devices.on('ready', function() {
 		// If TV state change, trigger RM Plus event, to power on/off reciever
 		this.mp1.check_power();
 
-		if (res.appId == 'com.webos.app.hdmi1') {
+		if (res.appId == this.shield.hdmi) {
 			// If input is hdmi1
 			// - Make NVIDIA Shield awake
 			// - Change sound mode based on NVIDIA Shield active app
-			this.shield.wake(() => {
-				this.shield.getCurrentApp();
-				console.log("\x1b[36mTV\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
-			});
+			if (this.shield.is_sleep) this.shield.wake();
 		} else {
 			// If TV state change,
 			// - Trigger RM Plus event
 			// - Change sound mode in receiver
 			this.rmplus.checkData();
 
-			this.shield.sleep(() => {
-				this.shield.stopGetCurrentApp();
-				console.log("\x1b[36mTV\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
-			});
+			if (!this.shield.is_sleep) this.shield.sleep();
 		}
 	});
 });
@@ -184,49 +180,47 @@ devices.on('mostready', function() {
 	console.log('\n\x1b[4mMost devices are ready\x1b[0m', "\n");
 
 	this.shield.status((status) => {
-		console.log("\x1b[32mNS\x1b[0m: Shield status -> \x1b[1m" + status + "\x1b[0m");
-
-		if(this.lg == null) this.lg = { appId: "" };
-
-		// If shield is on, wake up TV
-		if(status && this.lg.appId == "") {
-			this.force_emit = true;
-			this.rmplus.sendCode("tvpower");
-		}
+		this.shield.is_sleep = !status;
+		if(status) console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
+		else console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
 	});
 
-	this.shield.on('currentappchange', (currentapp) => {
-		active_nvidia_app = currentapp;
+	this.shield.on('currentmediaappchange', (currentapp) => {
+		this.current_media_app = currentapp;
 
 		// If current app change, trigger RM Plus event, to change sound mode in receiver
 		this.rmplus.checkData();
 
-		console.log("\x1b[32mNS\x1b[0m: Shield active app -> \x1b[1m" + active_nvidia_app + "\x1b[0m");
+		console.log("\x1b[32mNS\x1b[0m: Shield active media app -> \x1b[1m" + this.current_media_app + "\x1b[0m");
 	});
 
 	this.shield.on('awake', () => {
+		this.shield.is_sleep = false;
 		if(this.lg == null) this.lg = { appId: "" };
 
-		if(this.lg.appId == "") {
+		// Need to have delay
+		setTimeout(() => {
 			// Wake up tv and then the reciever automatically
-			this.rmplus.sendCode("tvpower");
-			// Set input to HDMI1
-			lgtv.request('ssap://system.launcher/launch', {id: 'com.webos.app.hdmi1'});
+			if(this.lg.appId == "")
+				this.rmplus.sendCode("tvpower");
 
-			console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
-		}
+			// Set input to HDMI1
+			lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
+		}, 1000);
+
+		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
 	});
 
 	this.shield.on('sleep', () => {
+		this.shield.is_sleep = true;
 		if(this.lg == null) this.lg = { appId: "" };
 
 		// If Shield is sleeping while in input HDMI1 then turn off TV
-		if(this.lg.appId == "com.webos.app.hdmi1") {
-			active_nvidia_app = "";
+		if(this.lg.appId == this.shield.hdmi) {
+			this.current_media_app = "";
 			// Turn off tv and then the reciever automatically
 			lgtv.request('ssap://system/turnOff');
 		}
-
 		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
 	});
 
@@ -235,23 +229,25 @@ devices.on('mostready', function() {
 			appid = this.lg.appId;
 
 		// Check LG TV and NVIDIA Shield Active app
+		// Set reciever mode based on the stereo list
 		if (
-			(appid != "com.webos.app.hdmi1" && app_stereo.includes(appid)) ||
-			(appid == "com.webos.app.hdmi1" && app_stereo.includes(active_nvidia_app))
+			// When TV is not in Shield input, check TV current App
+			(appid != this.shield.hdmi && app_stereo.includes(appid)) ||
+			// When TV is in Shield input, check Shield current media App
+			(appid == this.shield.hdmi && app_stereo.includes(this.current_media_app))
 		) {
-			// Set reciever mode based on the stereo list
-			// and set reciever mode to extra-stereo
+			// Set reciever mode to extra-stereo
 			if(dev.sound_mode != "surround") {
 				dev.sound_mode = "surround";
 				dev.sendCode("soundalc", "soundstereo");
-				console.log("\x1b[36mRP\x1b[0m:", appid, "-> \x1b[1mStereo Sound\x1b[0m");
+				console.log("\x1b[36mRP\x1b[0m: Sound is -> \x1b[1mStereo Sound\x1b[0m");
 			}
 		} else if (appid != "") {
 			// Set reciever mode to auto surround sound for other
 			if(dev.sound_mode != "stereo") {
 				dev.sound_mode = "stereo";
 				dev.sendCode("soundalc", "soundauto");
-				console.log("\x1b[36mRP\x1b[0m:", appid, "-> \x1b[1mSurround Sound\x1b[0m");
+				console.log("\x1b[36mRP\x1b[0m: Sound is -> \x1b[1mSurround Sound\x1b[0m");
 			}
 		}
 	});
@@ -277,7 +273,7 @@ devices.on('mostready', function() {
 		}
 	});
 });
-// At the beginning loop until all devices get connected
+// At the beginning loop until all devices are connected
 let devicecheck = setInterval(() => {
 	if (devices.lg != null && devices.mp1 != null && devices.rmplus != null && devices.shield != null) {
 		devices.emit('mostready');
