@@ -188,8 +188,6 @@ devices.on('mostready', function() {
 	this.shield.on('currentappchange', (currentapp) => {
 		if(this.lg == null) this.lg = { appId: "" };
 
-		this.current_app = currentapp;
-
 		// If shield and tv are sleep while current app change, wake up everything
 		if (this.lg.appId == "") {
 			// Wake up shield
@@ -205,7 +203,7 @@ devices.on('mostready', function() {
 			}, 1000);
 		}
 
-		console.log("\x1b[32mNS\x1b[0m: Shield active app -> \x1b[1m" + this.current_media_app + "\x1b[0m");
+		console.log("\x1b[32mNS\x1b[0m: Shield is switching app");
 	});
 
 	this.shield.on('currentmediaappchange', (currentapp) => {
