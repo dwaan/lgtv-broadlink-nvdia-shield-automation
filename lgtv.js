@@ -80,6 +80,7 @@ console.log('\n\x1b[4mConnecting...\x1b[0m', "\n");
 
 
 // Connect to NVIDIA Shield
+shield.debug = true;
 shield.connect();
 shield.on('ready', function() {
 	devices.shield = this;
@@ -169,10 +170,11 @@ devices.on('ready', function() {
 			// If TV state change,
 			// - Trigger RM Plus event
 			// - Change sound mode in receiver
-			this.rmplus.checkData();
-
 			if (!this.shield.is_sleep) this.shield.sleep();
 		}
+
+		if(res.appId != "" && res.appId != this.shield.hdmi) this.current_media_app = res.appId;
+		this.rmplus.checkData();
 	});
 });
 // When all devices except TV is on
@@ -250,12 +252,7 @@ devices.on('mostready', function() {
 
 		// Check LG TV and NVIDIA Shield Active app
 		// Set reciever mode based on the stereo list
-		if (
-			// When TV is not in Shield input, check TV current App
-			(appid != this.shield.hdmi && app_stereo.includes(appid)) ||
-			// When TV is in Shield input, check Shield current media App
-			(appid == this.shield.hdmi && app_stereo.includes(this.current_media_app))
-		) {
+		if (app_stereo.includes(this.current_media_app)) {
 			// Set reciever mode to extra-stereo
 			if(dev.sound_mode != "surround") {
 				dev.sound_mode = "surround";
