@@ -185,8 +185,34 @@ devices.on('mostready', function() {
 		else console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
 	});
 
-	this.shield.on('currentmediaappchange', (currentapp) => {
+	this.shield.on('currentappchange', (currentapp) => {
+		if(this.lg == null) this.lg = { appId: "" };
+
 		this.current_media_app = currentapp;
+
+		// If current app change, trigger RM Plus event, to change sound mode in receiver
+		this.rmplus.checkData();
+
+		// If shield and tv are sleep while current app change, wake up everything
+		if (this.lg.appId == "") {
+			// Wake up shield
+			if (this.shield.is_sleep) this.shield.wake();
+
+			// Need to have delay
+			setTimeout(() => {
+				// Wake up tv and then the reciever automatically
+				if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
+
+				// Set input to HDMI1
+				lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
+			}, 1000);
+		}
+
+		console.log("\x1b[32mNS\x1b[0m: Shield active app -> \x1b[1m" + this.current_media_app + "\x1b[0m");
+	});
+
+	this.shield.on('currentappchange', (currentapp) => {
+		this.current_app = currentapp;
 
 		// If current app change, trigger RM Plus event, to change sound mode in receiver
 		this.rmplus.checkData();
@@ -201,8 +227,7 @@ devices.on('mostready', function() {
 		// Need to have delay
 		setTimeout(() => {
 			// Wake up tv and then the reciever automatically
-			if(this.lg.appId == "")
-				this.rmplus.sendCode("tvpower");
+			if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
 
 			// Set input to HDMI1
 			lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
