@@ -1,1 +1,1 @@
-node lgtv.js
+node lgtv

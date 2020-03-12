@@ -16,13 +16,10 @@ let
 	// NVIDIA Shield
 	nvidiaShieldAdb = require('nvidia-shield-adb'),
 	shield = new nvidiaShieldAdb('192.168.1.106'),
-	// Broadlink MP1
-	broadlinksm = require('broadlinkjs-sm'),
-	mp1 = new broadlinksm(),
-	// Broadlink RM Plus
+	// Broadlink MP1 and  RM Plus
 	broadlink = require('broadlinkjs'),
+	broadlinks = new broadlink(),
 	// Costume vars
-	rmplus = new broadlink(),
 	devices = {}
 ;
 
@@ -80,8 +77,8 @@ console.log('\n\x1b[4mConnecting...\x1b[0m', "\n");
 
 
 // Connect to NVIDIA Shield
-shield.debug = true;
-shield.connect();
+shield.debug = false;
+shield.connect(false);
 shield.on('ready', function() {
 	devices.shield = this;
 	devices.shield.hdmi = "com.webos.app.hdmi1";
@@ -89,8 +86,8 @@ shield.on('ready', function() {
 });
 
 // Connect to Broadlink RM Plus, for Reciever IR blaster
-rmplus.discover();
-rmplus.on("deviceReady", (dev) => {
+// Connect to Broadlink MP1, for Reciever Power
+broadlinks.on("deviceReady", (dev) => {
 	if (dev.type == "DEVICE") {
 		function bufferFile(relPath) {
 			return fs.readFileSync(path.join(__dirname, relPath));
@@ -98,25 +95,20 @@ rmplus.on("deviceReady", (dev) => {
 
 		devices.rmplus = dev;
 		devices.rmplus.sendCode = function() {
-			for (var i = 0; i < arguments.length; i++) {
-				setTimeout(() => {
-					dev.sendData(bufferFile("code/" + arguments[i] + ".bin"));
-				}, 500);
-			}
+			var argv = arguments,
+				i= 0,
+				loop = setInterval(() => {
+					dev.sendData(bufferFile("code/" + argv[i++] + ".bin"));
+					if (i >= argv.length) clearInterval(loop);
+				}, 250);
 		}
-		devices.rmplus.checkData();
-		console.log("\x1b[33mRP\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
-	}
-});
-
-// Connect to Broadlink MP1, for Reciever Power
-mp1.discover();
-mp1.on("deviceReady", (dev) => {
-	if (dev.type == "MP1") {
+		console.log("\x1b[35mRP\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+	} else if (dev.type == "MP1") {
 		devices.mp1 = dev;
 		console.log("\x1b[33mMP\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 	}
 });
+broadlinks.discover();
 
 // Connect to LG TV
 lgtv.on('connect', () => {
@@ -147,14 +139,16 @@ lgtv.on('error', (err) => {
 });
 
 
-
 // When all devices is on
 devices.on('ready', function() {
 	console.log('\n\x1b[4mAll devices are ready\x1b[0m', "\n");
 
 	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
-		if (res.appId == "") console.log("\x1b[36mTV\x1b[0m: TV -> \x1b[1mOFF\x1b[0m");
-		else console.log("\x1b[36mTV\x1b[0m: TV -> \x1b[1mON\x1b[0m");
+		if (res.appId == "") console.log("\x1b[36mTV\x1b[0m: TV -> \x1b[1mSleep\x1b[0m");
+		else {
+			if(devices.lg.appId == "") console.log(`\x1b[36mTV\x1b[0m: TV -> \x1b[1mWake\x1b[0m`);
+			console.log(`\x1b[36mTV\x1b[0m: TV app -> \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
+		}
 		devices.lg.appId = res.appId;
 		devices.lg.emit('currentappchange', res);
 	});
@@ -183,6 +177,50 @@ devices.on('ready', function() {
 devices.on('mostready', function() {
 	console.log('\n\x1b[4mMost devices are ready\x1b[0m', "\n");
 
+	this.rmplus.on("rawData", (data) => {
+		var dev = this.rmplus,
+			appid = this.lg.appId;
+
+		// Check LG TV and NVIDIA Shield Active app
+		// Set reciever mode based on the stereo list
+		if (app_stereo.includes(this.current_media_app)) {
+			// Set reciever mode to extra-stereo
+			if(dev.sound_mode != "surround") {
+				dev.sound_mode = "surround";
+				dev.sendCode("soundalc", "soundstereo", "volumedown", "volumedown", "volumedown", "volumedown", "volumedown");
+				console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mStereo Sound\x1b[0m");
+			}
+		} else if (appid != "") {
+			// Set reciever mode to auto surround sound for other
+			if(dev.sound_mode != "stereo") {
+				dev.sound_mode = "stereo";
+				dev.sendCode("soundalc", "soundauto", "volumeup", "volumeup", "volumeup", "volumeup", "volumeup");
+				console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mSurround Sound\x1b[0m");
+			}
+		}
+	});
+
+	this.mp1.on("mp_power", (status_array) => {
+		// Device id is array index + 1
+		// When TV is on turn on switch #3 but with a bit of delay
+		// so TV turn off sound didn't cut
+		if (this.lg.appId != "")  {
+			// TV is on, turn on reciever when reciever is off
+			if(!status_array[2]) {
+				this.mp1.set_power(3,1);
+				console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[1mON\x1b[0m")
+			}
+		} else {
+			// TV is off, turn off reciever when reciever is on
+			setTimeout(() => {
+				if(status_array[2]) {
+					this.mp1.set_power(3,0);
+					console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[2mOFF\x1b[0m")
+				}
+			}, 1000);
+		}
+	});
+
 	this.shield.status((status) => {
 		this.shield.is_sleep = !status;
 		if(status) console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
@@ -207,7 +245,7 @@ devices.on('mostready', function() {
 			}, 1000);
 		}
 
-		console.log("\x1b[32mNS\x1b[0m: Shield is switching app");
+		console.log(`\x1b[32mNS\x1b[0m: Shield active app -> \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
 	});
 
 	this.shield.on('currentmediaappchange', (currentapp) => {
@@ -216,7 +254,7 @@ devices.on('mostready', function() {
 		// If current app change, trigger RM Plus event, to change sound mode in receiver
 		this.rmplus.checkData();
 
-		console.log("\x1b[32mNS\x1b[0m: Shield active media app -> \x1b[1m" + this.current_media_app + "\x1b[0m");
+		console.log(`\x1b[32mNS\x1b[0m: Shield active media app -> \x1b[4m\x1b[37m${this.current_media_app}\x1b[0m`);
 	});
 
 	this.shield.on('awake', () => {
@@ -248,49 +286,7 @@ devices.on('mostready', function() {
 		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
 	});
 
-	this.rmplus.on("rawData", (data) => {
-		var dev = this.rmplus,
-			appid = this.lg.appId;
-
-		// Check LG TV and NVIDIA Shield Active app
-		// Set reciever mode based on the stereo list
-		if (app_stereo.includes(this.current_media_app)) {
-			// Set reciever mode to extra-stereo
-			if(dev.sound_mode != "surround") {
-				dev.sound_mode = "surround";
-				dev.sendCode("soundalc", "soundstereo");
-				console.log("\x1b[36mRP\x1b[0m: Sound is -> \x1b[1mStereo Sound\x1b[0m");
-			}
-		} else if (appid != "") {
-			// Set reciever mode to auto surround sound for other
-			if(dev.sound_mode != "stereo") {
-				dev.sound_mode = "stereo";
-				dev.sendCode("soundalc", "soundauto");
-				console.log("\x1b[36mRP\x1b[0m: Sound is -> \x1b[1mSurround Sound\x1b[0m");
-			}
-		}
-	});
-
-	this.mp1.on("mp_power", (status_array) => {
-		// Device id is array index + 1
-		// When TV is on turn on switch #3 but with a bit of delay
-		// so TV turn off sound didn't cut
-		if (this.lg.appId != "")  {
-			// TV is on, turn on reciever when reciever is off
-			if(!status_array[2]) {
-				this.mp1.set_power(3,1);
-				console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[1mON\x1b[0m")
-			}
-		} else {
-			// TV is off, turn off reciever when reciever is on
-			setTimeout(() => {
-				if(status_array[2]) {
-					this.mp1.set_power(3,0);
-					console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[2mOFF\x1b[0m")
-				}
-			}, 1000);
-		}
-	});
+	this.shield.subscribe();
 });
 // At the beginning loop until all devices are connected
 let devicecheck = setInterval(() => {
