@@ -6,7 +6,8 @@
   "dependencies": {
     "broadlinkjs": "git+https://github.com/dwaan/broadlinkjs.git",
     "lgtv2": "^1.4.1",
-    "nvidia-shield-adb": "git+https://github.com/dwaan/nvidia-shield-adb.git"
+    "nvidia-shield-adb": "git+https://github.com/dwaan/nvidia-shield-adb.git",
+    "power-state-with-ping": "git+https://github.com/dwaan/power-state-with-ping.git"
   },
   "scripts": {
     "test": "start.sh"
