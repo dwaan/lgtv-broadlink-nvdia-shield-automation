@@ -102,7 +102,7 @@ shield.connect(false);
 // Connect to Broadlink RM Plus, for Reciever IR blaster
 // Connect to Broadlink MP1, for Reciever Power
 broadlinks.on("deviceReady", (dev) => {
-	if (dev.type == "DEVICE") {
+	if (dev.type == "RM2") {
 		function bufferFile(relPath) {
 			return fs.readFileSync(path.join(__dirname, relPath));
 		}
@@ -116,6 +116,7 @@ broadlinks.on("deviceReady", (dev) => {
 					if (i >= argv.length) clearInterval(loop);
 				}, 500);
 		}
+
 		console.log("\x1b[35mRP\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 	} else if (dev.type == "MP1") {
 		devices.mp1 = dev;
@@ -166,15 +167,23 @@ devices.on('ready', function() {
 		devices.lg.appId = res.appId;
 
 		// If TV state change, trigger RM Plus event, to power on/off reciever
-		this.mp1.check_power();
+		clearTimeout(this.mp1.timer);
+		this.mp1.timer = setTimeout(() => {
+			this.mp1.check_power();
+		}, 3000);
 
-		if (res.appId == this.shield.hdmi) {
+		clearTimeout(this.shield.timer);
+		this.shield.timer = setTimeout(() => {
 			// If input is hdmi1 make NVIDIA Shield awake
-			if (this.shield.is_sleep) this.shield.wake();
-		} else {
+			if (res.appId == this.shield.hdmi) {
+				if (this.shield.is_sleep) this.shield.wake();
+			}
+			// And the if need to be seperated somehow
 			// If TV state change, trigger RM Plus event
-			if (!this.shield.is_sleep) this.shield.sleep();
-		}
+			if(res.appId != this.shield.hdmi) {
+				if (!this.shield.is_sleep) this.shield.sleep();
+			}
+		}, 1500);
 
 		// Change sound mode in receiver
 		if(res.appId != "" && res.appId != this.shield.hdmi) this.current_media_app = res.appId;
@@ -196,21 +205,20 @@ devices.on('mostready', function() {
 		// Set reciever mode based on the stereo list
 		if (app_stereo.includes(this.current_media_app)) {
 			// Set reciever mode to extra-stereo
-			if(dev.sound_mode != "surround") {
-				dev.sound_mode = "surround";
-				dev.sendCode("soundalc", "soundstereo", "volumedown", "volumedown", "volumedown", "volumedown", "volumedown");
+			if(dev.sound_mode != "stereo") {
+				dev.sound_mode = "stereo";
+				dev.sendCode("soundalc", "soundstereo");
 				console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mStereo Sound\x1b[0m");
 			}
 		} else if (appid != "") {
 			// Set reciever mode to auto surround sound for other
-			if(dev.sound_mode != "stereo") {
-				dev.sound_mode = "stereo";
-				dev.sendCode("soundalc", "soundauto", "volumeup", "volumeup", "volumeup", "volumeup", "volumeup");
+			if(dev.sound_mode != "soundauto") {
+				dev.sound_mode = "soundauto";
+				dev.sendCode("soundalc", "soundauto");
 				console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mSurround Sound\x1b[0m");
 			}
 		}
 	});
-
 
 	// Pioner Reciever Power
 
@@ -266,39 +274,42 @@ devices.on('mostready', function() {
 	});
 
 	this.shield.on('currentmediaappchange', (currentapp) => {
+		// If current media app change, trigger RM Plus event, to change sound mode in receiver
 		this.current_media_app = currentapp;
+		this.rmplus.checkData();
 
 		if(this.current_media_app == "com.ionitech.airscreen") {
 			// Delay 15 seconds
 			// hit right and enter to remove ads
 		}
 
-		// If current app change, trigger RM Plus event, to change sound mode in receiver
-		this.rmplus.checkData();
-
 		console.log(`\x1b[32mNS\x1b[0m: Shield active media app -> \x1b[4m\x1b[37m${this.current_media_app}\x1b[0m`);
 	});
 
 	this.shield.on('awake', () => {
 		this.shield.is_sleep = false;
+
 		if(this.lg == null) this.lg = { appId: "" };
 
-		// Wake up tv and then the reciever automatically
-		if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
+		if(this.lg.appId == "") {
+			// Wake up tv and then the reciever automatically
+			this.rmplus.sendCode("tvpower");
 
-		// Set input to HDMI1
-		lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
+			// Set input to HDMI1
+			lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
 
-		setTimeout(() => {
-			// Set reciever to TV input
-			this.rmplus.sendCode("inputtv");
-		}, 1000);
+			setTimeout(() => {
+				// Set reciever to TV input
+				this.rmplus.sendCode("inputtv");
+			}, 1000);
+		}
 
 		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
 	});
 
 	this.shield.on('sleep', () => {
 		this.shield.is_sleep = true;
+
 		if(this.lg == null) this.lg = { appId: "" };
 
 		// If Shield is sleeping while in input HDMI1 then turn off TV

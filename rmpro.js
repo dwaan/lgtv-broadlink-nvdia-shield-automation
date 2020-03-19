@@ -35,17 +35,13 @@ if (process.argv.length < 3) {
 	var file = process.argv[3];
 
 	b.on("deviceReady", (dev) => {
-		if(dev.type == "DEVICE") {
+		if(dev.type == "RM2") {
 			console.log("Connected -> RM3 Pro+")
 			if (learn == "learn" || learn == "l") {
 				console.log("Waiting for input ->", file);
 				var timer = setInterval(function(){
 					dev.checkData();
 				}, 500);
-
-				dev.on("temperature", (temp)=>{
-					dev.enterLearning();
-				});
 
 				dev.on("rawData", (data) => {
 					fs.writeFile("code/" + file + ".bin", data, function(err) {
@@ -62,7 +58,7 @@ if (process.argv.length < 3) {
 					});
 				});
 
-				dev.checkTemperature();
+				dev.enterLearning();
 			} else {
 				// Buffer mydata
 				function bufferFile(relPath) {
