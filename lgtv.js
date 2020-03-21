@@ -187,7 +187,8 @@ devices.on('ready', function() {
 
 		// Change sound mode in receiver
 		if(res.appId != "" && res.appId != this.shield.hdmi) this.current_media_app = res.appId;
-		this.rmplus.checkData();
+
+		this.rmplus.emit("changevolume");
 	});
 });
 // When all devices except TV is on
@@ -197,7 +198,7 @@ devices.on('mostready', function() {
 
 	// Pioner Reciever IR Command
 
-	this.rmplus.on("rawData", (data) => {
+	this.rmplus.on("changevolume", (data) => {
 		var dev = this.rmplus,
 			appid = this.lg.appId;
 
@@ -276,7 +277,7 @@ devices.on('mostready', function() {
 	this.shield.on('currentmediaappchange', (currentapp) => {
 		// If current media app change, trigger RM Plus event, to change sound mode in receiver
 		this.current_media_app = currentapp;
-		this.rmplus.checkData();
+		this.rmplus.emit("changevolume");
 
 		if(this.current_media_app == "com.ionitech.airscreen") {
 			// Delay 15 seconds
@@ -294,15 +295,15 @@ devices.on('mostready', function() {
 		if(this.lg.appId == "") {
 			// Wake up tv and then the reciever automatically
 			this.rmplus.sendCode("tvpower");
-
-			// Set input to HDMI1
-			lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
-
-			setTimeout(() => {
-				// Set reciever to TV input
-				this.rmplus.sendCode("inputtv");
-			}, 1000);
 		}
+
+		// Set input to HDMI1
+		lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
+
+		setTimeout(() => {
+			// Set reciever to TV input
+			this.rmplus.sendCode("inputtv");
+		}, 1000);
 
 		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
 	});
@@ -329,31 +330,31 @@ devices.on('mostready', function() {
 	this.nswitch.on('awake', (current_app) => {
 		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");
 
-		// if(this.lg == null) this.lg = { appId: "" };
+		if(this.lg == null) this.lg = { appId: "" };
 
-		// // Wake up tv and then the reciever automatically
-		// if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
+		// Wake up tv and then the reciever automatically
+		if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
 
-		// // Switch to Pioneer input
-		// lgtv.request('ssap://system.launcher/launch', {id: this.nswitch.hdmi});
+		// Switch to Pioneer input
+		lgtv.request('ssap://system.launcher/launch', {id: this.nswitch.hdmi});
 
-		// setTimeout(() => {
-		// 	// Set reciever to Switch input
-		// 	this.rmplus.sendCode("inputswitch");
-		// }, 1000);
+		setTimeout(() => {
+			// Set reciever to Switch input
+			this.rmplus.sendCode("inputswitch");
+		}, 1000);
 	});
 
 	this.nswitch.on('sleep', (current_app) => {
 		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[2mSleep\x1b[0m");
 
-		// if(this.lg == null) this.lg = { appId: "" };
+		if(this.lg == null) this.lg = { appId: "" };
 
-		// // If Switch is sleeping while in input HDMI2 then turn off TV
-		// if(this.lg.appId == this.nswitch.hdmi) {
-		// 	this.current_media_app = "";
-		// 	// Turn off tv and then the reciever automatically
-		// 	lgtv.request('ssap://system/turnOff');
-		// }
+		// If Switch is sleeping while in input HDMI2 then turn off TV
+		if(this.lg.appId == this.nswitch.hdmi) {
+			this.current_media_app = "";
+			// Turn off tv and then the reciever automatically
+			lgtv.request('ssap://system/turnOff');
+		}
 	});
 
 	this.nswitch.subscribe();
