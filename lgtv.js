@@ -145,6 +145,7 @@ lgtv.on('prompt', () => {
 	console.log('\x1b[36mTV\x1b[0m: Please authorize on LG TV');
 });
 lgtv.on('close', () => {
+	this.force_emit = true;
 	if(this.lg != null) this.lg.appId = "";
 	console.log('\x1b[36mTV\x1b[0m: Close', getDateTime());
 });
@@ -157,6 +158,7 @@ lgtv.on('error', (err) => {
 // When all devices is on
 devices.on('ready', function() {
 	console.log('\n\x1b[4mAll devices are ready\x1b[0m', "\n");
+	lgtv.request('ssap://system.notifications/createToast', {message: "All devices are connected"});
 
 	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
 		if (res.appId == "") console.log("\x1b[36mTV\x1b[0m: TV -> \x1b[2mSleep\x1b[0m");
@@ -171,6 +173,15 @@ devices.on('ready', function() {
 		this.mp1.timer = setTimeout(() => {
 			this.mp1.check_power();
 		}, 3000);
+
+		// This just a failsafe if the reciever didn't switch it automatically
+		if (res.appId == this.nswitch.hdmi) {
+			// Set reciever to Switch input
+			this.rmplus.sendCode("inputswitch");
+		} else {
+			// Set reciever to TV input
+			this.rmplus.sendCode("inputtv");
+		}
 
 		clearTimeout(this.shield.timer);
 		this.shield.timer = setTimeout(() => {
@@ -202,23 +213,28 @@ devices.on('mostready', function() {
 		var dev = this.rmplus,
 			appid = this.lg.appId;
 
-		// Check LG TV and NVIDIA Shield Active app
-		// Set reciever mode based on the stereo list
-		if (app_stereo.includes(this.current_media_app)) {
-			// Set reciever mode to extra-stereo
-			if(dev.sound_mode != "stereo") {
-				dev.sound_mode = "stereo";
-				dev.sendCode("soundalc", "soundstereo");
-				console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mStereo Sound\x1b[0m");
+		clearTimeout(this.rmplus.timer);
+		this.rmplus.timer = setTimeout(() => {
+			// Check LG TV and NVIDIA Shield Active app
+			// Set reciever mode based on the stereo list
+			if (app_stereo.includes(this.current_media_app)) {
+				// Set reciever mode to extra-stereo
+				if(dev.sound_mode != "stereo") {
+					dev.sound_mode = "stereo";
+					dev.sendCode("soundalc", "soundstereo"); // Add longer delay
+					console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mStereo Sound\x1b[0m");
+					lgtv.request('ssap://system.notifications/createToast', {message: "Sound is Extra Stereo"});
+				}
+			} else if (appid != "") {
+				// Set reciever mode to auto surround sound for other
+				if(dev.sound_mode != "soundauto") {
+					dev.sound_mode = "soundauto";
+					dev.sendCode("soundalc", "soundauto"); // Add longer delay
+					console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mSurround Sound\x1b[0m");
+					lgtv.request('ssap://system.notifications/createToast', {message: "Sound is Auto Surround"});
+				}
 			}
-		} else if (appid != "") {
-			// Set reciever mode to auto surround sound for other
-			if(dev.sound_mode != "soundauto") {
-				dev.sound_mode = "soundauto";
-				dev.sendCode("soundalc", "soundauto");
-				console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mSurround Sound\x1b[0m");
-			}
-		}
+		}, 1500);
 	});
 
 	// Pioner Reciever Power
@@ -249,15 +265,17 @@ devices.on('mostready', function() {
 
 	this.shield.status((status) => {
 		this.shield.is_sleep = !status;
-		if(status) console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
+		if(!this.shield.is_sleep) console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
 		else console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
 	});
 
+	this.shield.currentappchange_firstrun = true;
 	this.shield.on('currentappchange', (currentapp) => {
 		if(this.lg == null) this.lg = { appId: "" };
 
 		// If shield and tv are sleep while current app change, wake up everything
-		if (this.lg.appId == "") {
+		console.log("NS: Status", this.lg.appId, this.shield.is_sleep);
+		if (this.lg.appId == "" && !this.shield.currentappchange_firstrun) {
 			// Wake up shield
 			if (this.shield.is_sleep) this.shield.wake();
 
@@ -270,6 +288,7 @@ devices.on('mostready', function() {
 				lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
 			}, 1000);
 		}
+		this.shield.currentappchange_firstrun  = false;
 
 		console.log(`\x1b[32mNS\x1b[0m: Shield active app -> \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
 	});
@@ -293,6 +312,7 @@ devices.on('mostready', function() {
 		if(this.lg == null) this.lg = { appId: "" };
 
 		if(this.lg.appId == "") {
+			// Thus can make TV sleep, as appID could be slower to retrieve -> Fix with force emit in TV close and error
 			// Wake up tv and then the reciever automatically
 			this.rmplus.sendCode("tvpower");
 		}
@@ -306,6 +326,7 @@ devices.on('mostready', function() {
 		}, 1000);
 
 		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
+		lgtv.request('ssap://system.notifications/createToast', {message: "Switching to NVIDIA Shield"});
 	});
 
 	this.shield.on('sleep', () => {
@@ -329,6 +350,7 @@ devices.on('mostready', function() {
 
 	this.nswitch.on('awake', (current_app) => {
 		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");
+		lgtv.request('ssap://system.notifications/createToast', {message: "Switching to Nintendo Switch"});
 
 		if(this.lg == null) this.lg = { appId: "" };
 
