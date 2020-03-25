@@ -274,7 +274,6 @@ devices.on('mostready', function() {
 		if(this.lg == null) this.lg = { appId: "" };
 
 		// If shield and tv are sleep while current app change, wake up everything
-		console.log("NS: Status", this.lg.appId, this.shield.is_sleep);
 		if (this.lg.appId == "" && !this.shield.currentappchange_firstrun) {
 			// Wake up shield
 			if (this.shield.is_sleep) this.shield.wake();
@@ -349,9 +348,6 @@ devices.on('mostready', function() {
 	// Nintendo Switch
 
 	this.nswitch.on('awake', (current_app) => {
-		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");
-		lgtv.request('ssap://system.notifications/createToast', {message: "Switching to Nintendo Switch"});
-
 		if(this.lg == null) this.lg = { appId: "" };
 
 		// Wake up tv and then the reciever automatically
@@ -364,6 +360,9 @@ devices.on('mostready', function() {
 			// Set reciever to Switch input
 			this.rmplus.sendCode("inputswitch");
 		}, 1000);
+
+		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");
+		lgtv.request('ssap://system.notifications/createToast', {message: "Switching to Nintendo Switch"});
 	});
 
 	this.nswitch.on('sleep', (current_app) => {
