@@ -289,6 +289,10 @@ devices.on('mostready', function() {
 		}
 		this.shield.currentappchange_firstrun  = false;
 
+		if(currentapp == "org.xbmc.kodi") {
+			lgtv.request('ssap://system.notifications/createToast', {message: "Go to sleep 🐒"});
+		}
+
 		console.log(`\x1b[32mNS\x1b[0m: Shield active app -> \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
 	});
 
@@ -316,10 +320,11 @@ devices.on('mostready', function() {
 			this.rmplus.sendCode("tvpower");
 		}
 
-		// Set input to HDMI1
-		lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
-
+		// Delayed to make sure everything is on first
 		setTimeout(() => {
+			// Set input to HDMI1
+			lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
+
 			// Set reciever to TV input
 			this.rmplus.sendCode("inputtv");
 		}, 1000);
@@ -348,18 +353,19 @@ devices.on('mostready', function() {
 	// Nintendo Switch
 
 	this.nswitch.on('awake', (current_app) => {
-		if(this.lg == null) this.lg = { appId: "" };
+		// Disabling this as it will be handled by the HDMI
+		// if(this.lg == null) this.lg = { appId: "" };
 
-		// Wake up tv and then the reciever automatically
-		if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
+		// // Wake up tv and then the reciever automatically
+		// if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
 
-		// Switch to Pioneer input
-		lgtv.request('ssap://system.launcher/launch', {id: this.nswitch.hdmi});
+		// // Switch to Pioneer input
+		// lgtv.request('ssap://system.launcher/launch', {id: this.nswitch.hdmi});
 
-		setTimeout(() => {
-			// Set reciever to Switch input
-			this.rmplus.sendCode("inputswitch");
-		}, 1000);
+		// setTimeout(() => {
+		// 	// Set reciever to Switch input
+		// 	this.rmplus.sendCode("inputswitch");
+		// }, 1000);
 
 		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");
 		lgtv.request('ssap://system.notifications/createToast', {message: "Switching to Nintendo Switch"});
