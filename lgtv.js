@@ -184,17 +184,17 @@ devices.on('ready', function() {
 		}
 
 		clearTimeout(this.shield.timer);
-		this.shield.timer = setTimeout(() => {
+		if(res.appId == this.shield.hdmi && this.shield.is_sleep)  {
 			// If input is hdmi1 make NVIDIA Shield awake
-			if (res.appId == this.shield.hdmi) {
-				if (this.shield.is_sleep) this.shield.wake();
-			}
-			// And the if need to be seperated somehow
-			// If TV state change, trigger RM Plus event
-			if(res.appId != this.shield.hdmi) {
-				if (!this.shield.is_sleep) this.shield.sleep();
-			}
-		}, 1500);
+			this.shield.timer = setTimeout(() => {
+				this.shield.wake();
+			}, 1500);
+		} else if(res.appId != this.shield.hdmi && !this.shield.is_sleep) {
+			// If input is not hdmi1 make NVIDIA Shield sleep
+			this.shield.timer = setTimeout(() => {
+				this.shield.sleep();
+			}, 1500);
+		}
 
 		// Change sound mode in receiver
 		if(res.appId != "" && res.appId != this.shield.hdmi) this.current_media_app = res.appId;

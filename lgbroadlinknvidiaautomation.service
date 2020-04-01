@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/Scripts/lgtv-broadlink-nvdia-shield-automation
+WorkingDirectory=/home/pi/Scripts/lgtv
 ExecStart=node lgtv.js
 StandardOutput=inherit
 StandardError=inherit
