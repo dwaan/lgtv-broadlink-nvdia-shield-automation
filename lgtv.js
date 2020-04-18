@@ -5,9 +5,6 @@ const timestamp = false;
 let
 	fs = require('fs'),
 	path = require('path'),
-	exec = require('child_process').exec,
-	spawn = require('child_process').spawn,
-	util = require('util'),
 	EventEmitter = require('events'),
 	// LG TV
 	lgtv = require('lgtv2/index.js')({
@@ -183,17 +180,12 @@ devices.on('ready', function() {
 			this.rmplus.sendCode("inputtv");
 		}
 
-		clearTimeout(this.shield.timer);
 		if(res.appId == this.shield.hdmi && this.shield.is_sleep)  {
 			// If input is hdmi1 make NVIDIA Shield awake
-			this.shield.timer = setTimeout(() => {
-				this.shield.wake();
-			}, 1500);
+			this.shield.wake();
 		} else if(res.appId != this.shield.hdmi && !this.shield.is_sleep) {
 			// If input is not hdmi1 make NVIDIA Shield sleep
-			this.shield.timer = setTimeout(() => {
-				this.shield.sleep();
-			}, 1500);
+			this.shield.sleep();
 		}
 
 		// Change sound mode in receiver
@@ -210,8 +202,7 @@ devices.on('mostready', function() {
 	// Pioner Reciever IR Command
 
 	this.rmplus.on("changevolume", (data) => {
-		var dev = this.rmplus,
-			appid = this.lg.appId;
+		var dev = this.rmplus;
 
 		clearTimeout(this.rmplus.timer);
 		this.rmplus.timer = setTimeout(() => {
@@ -225,7 +216,7 @@ devices.on('mostready', function() {
 					console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mStereo Sound\x1b[0m");
 					lgtv.request('ssap://system.notifications/createToast', {message: "Sound is Extra Stereo"});
 				}
-			} else if (appid != "") {
+			} else if (this.lg.appId != "") {
 				// Set reciever mode to auto surround sound for other
 				if(dev.sound_mode != "soundauto") {
 					dev.sound_mode = "soundauto";
@@ -251,12 +242,10 @@ devices.on('mostready', function() {
 			}
 		} else {
 			// TV is off, turn off reciever when reciever is on
-			setTimeout(() => {
-				if(status_array[2]) {
-					this.mp1.set_power(3,0);
-					console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[2mOFF\x1b[0m")
-				}
-			}, 1000);
+			if(status_array[2]) {
+				this.mp1.set_power(3,0);
+				console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[2mOFF\x1b[0m")
+			}
 		}
 	});
 
@@ -367,8 +356,8 @@ devices.on('mostready', function() {
 		// 	this.rmplus.sendCode("inputswitch");
 		// }, 1000);
 
-		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");
-		lgtv.request('ssap://system.notifications/createToast', {message: "Switching to Nintendo Switch"});
+		// console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");
+		// lgtv.request('ssap://system.notifications/createToast', {message: "Switching to Nintendo Switch"});
 	});
 
 	this.nswitch.on('sleep', (current_app) => {
