@@ -247,13 +247,13 @@ devices.on('mostready', function() {
 		if (this.lg.appId != "")  {
 			// TV is on, turn on reciever when reciever is off
 			if(!status_array[2]) {
-				// this.mp1.set_power(3,1);
+				this.mp1.set_power(3,1);
 				console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[1mON\x1b[0m")
 			}
 		} else {
 			// TV is off, turn off reciever when reciever is on
 			if(status_array[2]) {
-				// this.mp1.set_power(3,0);
+				this.mp1.set_power(3,0);
 				console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[2mOFF\x1b[0m")
 			}
 		}
