@@ -26,6 +26,7 @@ let
 let app_stereo = [
 	"com.google.android.apps.mediashell",
 	"com.ionitech.airscreen",
+	"com.waxrain.airplaydmr3",
 	"com.cloudmosa.puffinTV",
 	"com.android.chrome",
 	"com.nickonline.android.nickapp",
@@ -173,8 +174,11 @@ devices.on('ready', function() {
 
 		// This just a failsafe if the reciever didn't switch it automatically
 		if (res.appId == this.nswitch.hdmi) {
-			// Set reciever to Switch input
-			this.rmplus.sendCode("inputswitch");
+			// Set a delay
+			setTimeout(() => {
+				// Set reciever to Switch input
+				this.rmplus.sendCode("inputswitch");
+			}, 1000);
 		} else {
 			// Set reciever to TV input
 			this.rmplus.sendCode("inputtv");
@@ -193,17 +197,20 @@ devices.on('ready', function() {
 
 		this.rmplus.emit("changevolume");
 
-		// Force sound output to HDMI-ARC
-		lgtv.request('ssap://com.webos.service.apiadapter/audio/changeSoundOutput', {
-			output: 'external_arc'
-		}, (err, res) => {
-			if (!res || err || res.errorCode || !res.returnValue) {
-				console.log('\x1b[36mTV\x1b[0m: TV sound output -> error while changing sound output');
-				// if (res && res.errorText) {
-				// 	console.log('\x1b[36mTV\x1b[0m: TV sound output -> error message: %s', res.errorText);
-				// }
-			}
-		});
+		// Set a delay
+		setTimeout(() => {
+			// Force sound output to HDMI-ARC
+			lgtv.request('ssap://com.webos.service.apiadapter/audio/changeSoundOutput', {
+				output: 'external_arc'
+			}, (err, res) => {
+				if (!res || err || res.errorCode || !res.returnValue) {
+					console.log('\x1b[36mTV\x1b[0m: TV sound output -> error while changing sound output');
+					// if (res && res.errorText) {
+					// 	console.log('\x1b[36mTV\x1b[0m: TV sound output -> error message: %s', res.errorText);
+					// }
+				}
+			});
+		}, 1000);
 	});
 });
 // When all devices except TV is on
@@ -290,6 +297,7 @@ devices.on('mostready', function() {
 
 		if(currentapp == "org.xbmc.kodi") {
 			lgtv.request('ssap://system.notifications/createToast', {message: "Go to sleep 🐒"});
+			// Display every 30 minutes
 		}
 
 		console.log(`\x1b[32mNS\x1b[0m: Shield active app -> \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
@@ -299,11 +307,6 @@ devices.on('mostready', function() {
 		// If current media app change, trigger RM Plus event, to change sound mode in receiver
 		this.current_media_app = currentapp;
 		this.rmplus.emit("changevolume");
-
-		if(this.current_media_app == "com.ionitech.airscreen") {
-			// Delay 15 seconds
-			// hit right and enter to remove ads
-		}
 
 		console.log(`\x1b[32mNS\x1b[0m: Shield active media app -> \x1b[4m\x1b[37m${this.current_media_app}\x1b[0m`);
 	});
