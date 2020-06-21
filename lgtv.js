@@ -6,6 +6,7 @@ let
 	fs = require('fs'),
 	path = require('path'),
 	EventEmitter = require('events'),
+	request = require('request'),
 	// LG TV
 	lgtv = require('lgtv2/index.js')({
 		url: 'ws://192.168.1.105:3000'
@@ -407,3 +408,27 @@ let devicecheck = setInterval(() => {
 		clearInterval(devicecheck);
 	}
 }, 1000);
+
+
+// openweathermap.org API to get current temperature
+let apiKey = '792a714c5972745a0c059538681b9d7c';
+let city = 'tel-aviv';
+let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
+
+// Every 5 minutes the script will write temperature to temperature.txt
+setInterval(() => {
+	request(url, function (err, response, body) {
+		var data = "25";
+
+		if(!err) {
+			let weather = JSON.parse(body);
+			data = weather.main.temp;
+		}
+
+		console.log("\x1b[36mWeather\x1b[0m: Current temperature -> " + data + " C");
+
+		fs.writeFile( "temperature.txt", data, function(err) {
+			if(err) return false;
+		});
+	});
+}, 5 * 60 * 1000);

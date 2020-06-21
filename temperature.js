@@ -6,10 +6,10 @@ let city = argv.c || 'tel-aviv';
 let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
 
 request(url, function (err, response, body) {
-  if(err){
-    console.log("25");
-  } else {
-    let weather = JSON.parse(body);
-    console.log(weather.main.temp);
-  }
+	if(err){
+		console.log("25");
+	} else {
+		let weather = JSON.parse(body);
+		console.log(weather.main.temp);
+	}
 });
