@@ -59,6 +59,21 @@ if (process.argv.length < 3) {
 				});
 
 				dev.enterLearning();
+			} if (learn == "read" || learn == "r") {
+				// Buffer mydata
+				function bufferFile(relPath) {
+					return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
+				}
+
+				var data = bufferFile("code/" + file + ".bin");
+				data = new Buffer.from(data, 'ascii').toString('hex');
+
+				console.log("Code -> " + data);
+
+				var timer = setInterval(function(){
+					clearInterval(timer);
+					process.exit();
+				}, 500);
 			} else {
 				// Buffer mydata
 				function bufferFile(relPath) {
