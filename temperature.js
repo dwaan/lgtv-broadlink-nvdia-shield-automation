@@ -7,10 +7,9 @@ let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric
 
 request(url, function (err, response, body) {
   if(err){
-    console.log('error:', error);
+    console.log("25");
   } else {
     let weather = JSON.parse(body);
-    let message = `It's ${weather.main.temp} degrees in ${weather.name}!`;
-    console.log(Math.round(weather.main.temp));
+    console.log(weather.main.temp);
   }
 });
