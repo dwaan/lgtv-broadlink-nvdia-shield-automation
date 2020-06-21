@@ -66,6 +66,7 @@ if (process.argv.length < 3) {
 				}
 
 				console.log("Sending data ->", file);
+				console.log("Sending -> " + bufferFile("code/" + file + ".bin"));
 				dev.sendData(bufferFile("code/" + file + ".bin"));
 
 				var timer = setInterval(function(){

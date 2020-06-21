@@ -8,7 +8,9 @@
     "lgtv2": "^1.4.1",
     "nvidia-shield-adb": "git+https://github.com/dwaan/nvidia-shield-adb.git",
     "power-state-with-ping": "git+https://github.com/dwaan/power-state-with-ping.git",
-    "ws": "^7.2.3"
+    "request": "^2.88.2",
+    "ws": "^7.2.3",
+    "yargs": "^15.3.1"
   },
   "scripts": {
     "test": "start.sh"
