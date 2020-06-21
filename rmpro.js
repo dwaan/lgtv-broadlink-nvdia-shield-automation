@@ -33,64 +33,77 @@ if (process.argv.length < 3) {
 } else {
 	var learn = process.argv[2];
 	var file = process.argv[3];
+	var _file = process.argv[4];
 
-	b.on("deviceReady", (dev) => {
-		if(dev.type == "RM2") {
-			console.log("Connected -> RM3 Pro+")
-			if (learn == "learn" || learn == "l") {
-				console.log("Waiting for input ->", file);
-				var timer = setInterval(function(){
-					dev.checkData();
-				}, 500);
-
-				dev.on("rawData", (data) => {
-					fs.writeFile("code/" + file + ".bin", data, function(err) {
-						if(err) {
-							return console.log(err);
-						}
-
-						console.log("The file was saved!");
-
-						var timer = setInterval(function(){
-							clearInterval(timer);
-							process.exit();
-						}, 500);
-					});
-				});
-
-				dev.enterLearning();
-			} if (learn == "read" || learn == "r") {
-				// Buffer mydata
-				function bufferFile(relPath) {
-					return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
-				}
-
-				var data = bufferFile("code/" + file + ".bin");
-				data = new Buffer.from(data, 'ascii').toString('hex');
-
-				console.log("Code -> " + data);
-
-				var timer = setInterval(function(){
-					clearInterval(timer);
-					process.exit();
-				}, 500);
-			} else {
-				// Buffer mydata
-				function bufferFile(relPath) {
-					return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
-				}
-
-				console.log("Sending data ->", file);
-				console.log("Sending -> " + bufferFile("code/" + file + ".bin"));
-				dev.sendData(bufferFile("code/" + file + ".bin"));
-
-				var timer = setInterval(function(){
-					clearInterval(timer);
-					process.exit();
-				}, 500);
-			}
+	if (learn == "read" || learn == "r") {
+		// Buffer mydata
+		function bufferFile(relPath) {
+			return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
 		}
-	});
+
+		var data = bufferFile("code/" + file + ".bin");
+		data = new Buffer.from(data, 'ascii').toString('hex');
+
+		console.log("Code -> " + data);
+
+		process.exit();
+	} else if (learn == "convert" || learn == "c") {
+		var data = Buffer.from(file, 'base64');
+
+		console.log(data);
+
+		fs.writeFile("code/" + _file + ".bin", data, function(err) {
+			if(err) {
+				return console.log(err);
+			}
+
+			console.log("The file was saved!");
+
+			process.exit();
+		});
+	} else {
+		b.on("deviceReady", (dev) => {
+			if(dev.type == "RM2") {
+				console.log("Connected -> RM3 Pro+")
+				if (learn == "learn" || learn == "l") {
+					console.log("Waiting for input ->", file);
+					var timer = setInterval(function(){
+						dev.checkData();
+					}, 500);
+
+					dev.on("rawData", (data) => {
+						fs.writeFile("code/" + file + ".bin", data, function(err) {
+							if(err) {
+								return console.log(err);
+							}
+
+							console.log("The file was saved!");
+
+							var timer = setInterval(function(){
+								clearInterval(timer);
+								process.exit();
+							}, 500);
+						});
+					});
+
+					dev.enterLearning();
+				} else {
+					// Buffer mydata
+					function bufferFile(relPath) {
+						return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
+					}
+
+					console.log("Sending data ->", file);
+					dev.sendData(bufferFile("code/" + file + ".bin"));
+
+					var timer = setInterval(function(){
+						clearInterval(timer);
+						process.exit();
+					}, 500);
+				}
+			}
+		});
+	}
 
 	b.discover();
 }
