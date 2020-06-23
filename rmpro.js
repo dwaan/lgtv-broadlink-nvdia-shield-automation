@@ -6,6 +6,9 @@
 
 	When you want to send the code
 		node rmpro.js send input-name
+
+	When you want to read the code
+		node rmpro.js read input-name
 */
 
 'use strict';
@@ -64,7 +67,7 @@ if (process.argv.length < 3) {
 	} else {
 		b.on("deviceReady", (dev) => {
 			if(dev.type == "RM2") {
-				console.log("Connected -> RM3 Pro+")
+				console.log("Connected -> " + dev.host.address)
 				if (learn == "learn" || learn == "l") {
 					console.log("Waiting for input ->", file);
 					var timer = setInterval(function(){
@@ -79,10 +82,11 @@ if (process.argv.length < 3) {
 
 							console.log("The file was saved!");
 
-							var timer = setInterval(function(){
-								clearInterval(timer);
-								process.exit();
-							}, 500);
+							data = new Buffer.from(data, 'ascii').toString('hex');
+
+							console.log("Code -> " + data);
+
+							process.exit();
 						});
 					});
 
