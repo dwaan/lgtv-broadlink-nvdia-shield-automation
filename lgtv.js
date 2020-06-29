@@ -444,7 +444,7 @@ setInterval(() => {
 			data = weather.main.temp;
 		}
 
-		console.log("\x1b[36mWeather\x1b[0m: Current temperature -> " + data + " C");
+		// console.log("\x1b[36mWeather\x1b[0m: Current temperature -> " + data + " C");
 
 		fs.writeFile( "temperature.txt", data, function(err) {
 			if(err) return false;
