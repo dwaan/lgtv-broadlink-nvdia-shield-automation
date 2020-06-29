@@ -167,24 +167,6 @@ devices.on('ready', function() {
 		}
 		devices.lg.appId = res.appId;
 
-		// If TV state change, trigger RM Plus event, to power on/off reciever
-		clearTimeout(this.mp1.timer);
-		this.mp1.timer = setTimeout(() => {
-			this.mp1.check_power();
-		}, 5000);
-
-		// This just a failsafe if the reciever didn't switch it automatically
-		if (res.appId == this.nswitch.hdmi) {
-			// Set a delay
-			setTimeout(() => {
-				// Set reciever to Switch input
-				this.rmplus.sendCode("inputswitch");
-			}, 1000);
-		} else {
-			// Set reciever to TV input
-			this.rmplus.sendCode("inputtv");
-		}
-
 		if(res.appId == this.shield.hdmi && this.shield.is_sleep)  {
 			// If input is hdmi1 make NVIDIA Shield awake
 			this.shield.wake();
@@ -196,22 +178,49 @@ devices.on('ready', function() {
 		// Change sound mode in receiver
 		if(res.appId != "" && res.appId != this.shield.hdmi) this.current_media_app = res.appId;
 
+		// Switch reciever sound mode accordingly
 		this.rmplus.emit("changevolume");
 
-		// Set a delay
-		setTimeout(() => {
-			// Force sound output to HDMI-ARC
-			lgtv.request('ssap://com.webos.service.apiadapter/audio/changeSoundOutput', {
-				output: 'external_arc'
-			}, (err, res) => {
-				if (!res || err || res.errorCode || !res.returnValue) {
-					console.log('\x1b[36mTV\x1b[0m: TV sound output -> error while changing sound output');
-					// if (res && res.errorText) {
-					// 	console.log('\x1b[36mTV\x1b[0m: TV sound output -> error message: %s', res.errorText);
-					// }
+		// If TV state change, trigger RM Plus event, to power on/off reciever
+		clearTimeout(this.mp1.timer);
+		this.mp1.timer = setTimeout(() => {
+			this.mp1.check_power();
+
+			// Then make sure reciever switch to appropiate input after reciever is on
+			clearTimeout(this.rmplus.timer2);
+			this.rmplus.timer2 = setTimeout(() => {
+				// Switch reciever sound mode accordingly
+				this.rmplus.emit("changevolume");
+
+				// This just a failsafe if the reciever didn't switch it automatically
+				if (res.appId == this.nswitch.hdmi) {
+					// Set reciever to Switch input
+					this.rmplus.sendCode("inputswitch");
+				} else {
+					// Set reciever to TV input
+					this.rmplus.sendCode("inputtv");
 				}
-			});
-		}, 1000);
+			}, 5000);
+		}, 5000);
+	});
+
+	lgtv.subscribe('ssap://com.webos.service.apiadapter/audio/getSoundOutput', (err, res) => {
+		if (!res || err || res.errorCode) {
+			console.log('\x1b[36mTV\x1b[0m: Sound output - error while getting current sound output', err, res);
+		} else {
+			console.log('\x1b[36mTV\x1b[0m: Current sound output: %s', res.soundOutput);
+
+			if(res.soundOutput != 'external_arc') {
+				// Force sound output to HDMI-ARC
+				lgtv.request('ssap://com.webos.service.apiadapter/audio/changeSoundOutput', {
+					output: 'external_arc'
+				}, (err, res) => {
+					if (!res || err || res.errorCode || !res.returnValue) {
+						console.log('\x1b[36mTV\x1b[0m: TV sound output -> error while changing sound output');
+					}
+				});
+			}
+		}
 	});
 });
 // When all devices except TV is on
@@ -270,10 +279,17 @@ devices.on('mostready', function() {
 
 	// NVIDIA Switch
 
+	this.shield.firstrun = true;
 	this.shield.status((status) => {
 		this.shield.is_sleep = !status;
-		if(!this.shield.is_sleep) console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
-		else console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
+		if(!this.shield.is_sleep) {
+			console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
+			// maje
+			if (this.shield.firstrun) {
+				this.shield.wake();
+				this.shield.firstrun = false;
+			}
+		} else console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
 	});
 
 	this.shield.currentappchange_firstrun = true;
@@ -332,7 +348,7 @@ devices.on('mostready', function() {
 			this.rmplus.sendCode("inputtv");
 		}, 1000);
 
-		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
+		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWaking up\x1b[0m");
 		// lgtv.request('ssap://system.notifications/createToast', {message: "Switching to NVIDIA Shield"});
 	});
 
@@ -350,7 +366,7 @@ devices.on('mostready', function() {
 				lgtv.request('ssap://system/turnOff');
 			}, 2500);
 		}
-		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
+		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mGoing to Sleep\x1b[0m");
 	});
 
 	this.shield.subscribe();
@@ -359,7 +375,7 @@ devices.on('mostready', function() {
 	// Nintendo Switch
 
 	this.nswitch.on('awake', (current_app) => {
-		// Disabling this as it will be handled by the HDMI
+		// Disabling this as it already handled by the HDMI and Home Automation
 		// if(this.lg == null) this.lg = { appId: "" };
 
 		// // Wake up tv and then the reciever automatically
@@ -369,8 +385,11 @@ devices.on('mostready', function() {
 		// lgtv.request('ssap://system.launcher/launch', {id: this.nswitch.hdmi});
 
 		if(this.lg.appId == this.nswitch.hdmi) {
-			// Set reciever to Switch input
-			this.rmplus.sendCode("inputswitch");
+			// Delayed to make sure everything is on first
+			setTimeout(() => {
+				// Set reciever to Switch input
+				this.rmplus.sendCode("inputswitch");
+			}, 1000);
 		}
 
 		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");

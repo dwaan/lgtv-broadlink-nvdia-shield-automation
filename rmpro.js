@@ -100,10 +100,10 @@ if (process.argv.length < 3) {
 					console.log("Sending data ->", file);
 					dev.sendData(bufferFile("code/" + file + ".bin"));
 
-					var timer = setInterval(function(){
-						clearInterval(timer);
-						process.exit();
-					}, 500);
+					// var timer = setInterval(function(){
+					// 	clearInterval(timer);
+					// 	process.exit();
+					// }, 500);
 				}
 			}
 		});
