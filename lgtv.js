@@ -85,7 +85,7 @@ nswitch.hdmi = "com.webos.app.hdmi2";
 nswitch.on('ready', function() {
 	devices.nswitch = this;
 
-	console.log("\x1b[33mSW\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+	console.log("\x1b[33mNintendo Switch\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 });
 nswitch.connect(false);
 
@@ -94,14 +94,14 @@ shield.debug = false;
 shield.hdmi = "com.webos.app.hdmi1";
 shield.on('ready', function() {
 	devices.shield = this;
-	console.log("\x1b[32mNS\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+	console.log("\x1b[32mNvidia Shield\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 });
 shield.connect(false);
 
 // Connect to Broadlink RM Plus, for Reciever IR blaster
 // Connect to Broadlink MP1, for Reciever Power
 broadlinks.on("deviceReady", (dev) => {
-	if (dev.type == "RM2") {
+	if (dev.type == "RMPro") {
 		function bufferFile(relPath) {
 			return fs.readFileSync(path.join(__dirname, relPath));
 		}
@@ -116,10 +116,10 @@ broadlinks.on("deviceReady", (dev) => {
 				}, 500);
 		}
 
-		console.log("\x1b[35mRP\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+		console.log("\x1b[35mBroadlink RM Pro+\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 	} else if (dev.type == "MP1") {
 		devices.mp1 = dev;
-		console.log("\x1b[33mMP\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+		console.log("\x1b[33mBroadlink MP1\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 	}
 });
 broadlinks.discover();
@@ -137,20 +137,20 @@ lgtv.on('connect', () => {
 		devices.emit('ready');
 	}
 
-	console.log("\x1b[36mTV\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+	console.log("\x1b[36mLG TV\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 });
 // Prompt for security code
 lgtv.on('prompt', () => {
-	console.log('\x1b[36mTV\x1b[0m: Please authorize on LG TV');
+	console.log('\x1b[36mLG TV\x1b[0m: Please authorize on LG TV');
 });
 lgtv.on('close', () => {
 	this.force_emit = true;
 	if(this.lg != null) this.lg.appId = "";
-	console.log('\x1b[36mTV\x1b[0m: Close', getDateTime());
+	console.log('\x1b[36mLG TV\x1b[0m: Status -> Close', getDateTime());
 });
 lgtv.on('error', (err) => {
 	this.force_emit = true;
-	console.log("\x1b[36mTV\x1b[0m: TV -> No Response");
+	console.log("\x1b[36mLG TV\x1b[0m: TV -> No Response");
 });
 
 
@@ -159,13 +159,38 @@ devices.on('ready', function() {
 	console.log('\n\x1b[4mAll devices are ready\x1b[0m', "\n");
 	lgtv.request('ssap://system.notifications/createToast', {message: "All devices are connected"});
 
+	lgtv.subscribe('ssap://com.webos.service.tvpower/power/getPowerState', (err, res) => {
+	    if (!res || err || res.errorCode) {
+	        console.log('\x1b[36mLG TV\x1b[0m: TV -> Error while getting power status', err, res);
+	    } else {
+	        let statusState = (res && res.state ? res.state : null);
+	        let statusProcessing = (res && res.processing ? res.processing : null);
+	        let statusPowerOnReason = (res && res.powerOnReason ? res.powerOnReason : null);
+	        let statuses = "";
+
+	        if (statusState) {
+		        statuses += 'State: ' + statusState;
+	        }
+	        if (statusProcessing) {
+	        	if(statuses != "") statuses += ", ";
+		        statuses += 'Processing: ' + statusProcessing;
+	        }
+	        if (statusPowerOnReason) {
+	        	if(statuses != "") statuses += ", ";
+		        statuses += 'Power on reason: ' + statusPowerOnReason;
+	        }
+
+	        console.log('\x1b[36mLG TV\x1b[0m: Status -> ' + statuses);
+	    }
+	});
+
 	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
-		if (res.appId == "") console.log("\x1b[36mTV\x1b[0m: TV -> \x1b[2mSleep\x1b[0m");
+		if (res.appId == "") console.log("\x1b[36mLG TV\x1b[0m: TV -> \x1b[2mSleep\x1b[0m");
 		else {
-			if(devices.lg.appId == "") console.log(`\x1b[36mTV\x1b[0m: TV -> \x1b[1mWake\x1b[0m`);
-			console.log(`\x1b[36mTV\x1b[0m: TV app -> \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
+			if(this.lg.appId == "") console.log(`\x1b[36mLG TV\x1b[0m: TV -> \x1b[1mWake\x1b[0m`);
+			console.log(`\x1b[36mLG TV\x1b[0m: TV app -> \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
 		}
-		devices.lg.appId = res.appId;
+		this.lg.appId = res.appId;
 
 		if(res.appId == this.shield.hdmi && this.shield.is_sleep)  {
 			// If input is hdmi1 make NVIDIA Shield awake
@@ -182,33 +207,37 @@ devices.on('ready', function() {
 		this.rmplus.emit("changevolume");
 
 		// If TV state change, trigger RM Plus event, to power on/off reciever
+		let __timer = 1000;
+		if (this.lg.appId != "") __timer = 0;
 		clearTimeout(this.mp1.timer);
 		this.mp1.timer = setTimeout(() => {
 			this.mp1.check_power();
 
 			// Then make sure reciever switch to appropiate input after reciever is on
-			clearTimeout(this.rmplus.timer2);
-			this.rmplus.timer2 = setTimeout(() => {
-				// Switch reciever sound mode accordingly
-				this.rmplus.emit("changevolume");
+			if (this.lg.appId != "") {
+				clearTimeout(this.rmplus.timer2);
+				this.rmplus.timer2 = setTimeout(() => {
+					// Switch reciever sound mode accordingly
+					this.rmplus.emit("changevolume");
 
-				// This just a failsafe if the reciever didn't switch it automatically
-				if (res.appId == this.nswitch.hdmi) {
-					// Set reciever to Switch input
-					this.rmplus.sendCode("inputswitch");
-				} else {
-					// Set reciever to TV input
-					this.rmplus.sendCode("inputtv");
-				}
-			}, 5000);
-		}, 5000);
+					// This just a failsafe if the reciever didn't switch it automatically
+					if (res.appId == this.nswitch.hdmi) {
+						// Set reciever to Switch input
+						this.rmplus.sendCode("inputswitch");
+					} else {
+						// Set reciever to TV input
+						this.rmplus.sendCode("inputtv");
+					}
+				}, 1000);
+			}
+		}, __timer);
 	});
 
 	lgtv.subscribe('ssap://com.webos.service.apiadapter/audio/getSoundOutput', (err, res) => {
 		if (!res || err || res.errorCode) {
-			console.log('\x1b[36mTV\x1b[0m: Sound output - error while getting current sound output', err, res);
+			console.log('\x1b[36mLG TV\x1b[0m: Sound Output -> Error while getting current sound output', err, res);
 		} else {
-			console.log('\x1b[36mTV\x1b[0m: Current sound output: %s', res.soundOutput);
+			console.log('\x1b[36mLG TV\x1b[0m: Sound Output -> %s', res.soundOutput);
 
 			if(res.soundOutput != 'external_arc') {
 				// Force sound output to HDMI-ARC
@@ -216,7 +245,7 @@ devices.on('ready', function() {
 					output: 'external_arc'
 				}, (err, res) => {
 					if (!res || err || res.errorCode || !res.returnValue) {
-						console.log('\x1b[36mTV\x1b[0m: TV sound output -> error while changing sound output');
+						console.log('\x1b[36mLG TV\x1b[0m: Sound Output -> Error while changing sound output');
 					}
 				});
 			}
@@ -242,7 +271,7 @@ devices.on('mostready', function() {
 				if(dev.sound_mode != "stereo") {
 					dev.sound_mode = "stereo";
 					dev.sendCode("soundalc", "soundstereo"); // Add longer delay
-					console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mStereo Sound\x1b[0m");
+					console.log("\x1b[35mBroadlink\x1b[0m: Sound -> \x1b[4m\x1b[37mStereo Sound\x1b[0m");
 					lgtv.request('ssap://system.notifications/createToast', {message: "Sound is Extra Stereo"});
 				}
 			} else if (this.lg.appId != "") {
@@ -250,7 +279,7 @@ devices.on('mostready', function() {
 				if(dev.sound_mode != "soundauto") {
 					dev.sound_mode = "soundauto";
 					dev.sendCode("soundalc", "soundauto"); // Add longer delay
-					console.log("\x1b[35mRP\x1b[0m: Sound is -> \x1b[4m\x1b[37mSurround Sound\x1b[0m");
+					console.log("\x1b[35mBroadlink\x1b[0m: Sound -> \x1b[4m\x1b[37mSurround Sound\x1b[0m");
 					lgtv.request('ssap://system.notifications/createToast', {message: "Sound is Auto Surround"});
 				}
 			}
@@ -265,13 +294,13 @@ devices.on('mostready', function() {
 			// TV is on, turn on reciever when reciever is off
 			if(!status_array[2]) {
 				this.mp1.set_power(3,1);
-				console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[1mON\x1b[0m")
+				console.log("\x1b[33mBroadlink MP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[1mON\x1b[0m")
 			}
 		} else {
 			// TV is off, turn off reciever when reciever is on
 			if(status_array[2]) {
 				this.mp1.set_power(3,0);
-				console.log("\x1b[33mMP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[2mOFF\x1b[0m")
+				console.log("\x1b[33mBroadlink MP\x1b[0m: Broadlink MP1 Switch #3 -> \x1b[2mOFF\x1b[0m")
 			}
 		}
 	});
@@ -283,13 +312,13 @@ devices.on('mostready', function() {
 	this.shield.status((status) => {
 		this.shield.is_sleep = !status;
 		if(!this.shield.is_sleep) {
-			console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWake\x1b[0m");
+			console.log("\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1mWake\x1b[0m");
 			// maje
 			if (this.shield.firstrun) {
 				this.shield.wake();
 				this.shield.firstrun = false;
 			}
-		} else console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mSleep\x1b[0m");
+		} else console.log("\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2mSleep\x1b[0m");
 	});
 
 	this.shield.currentappchange_firstrun = true;
@@ -317,7 +346,7 @@ devices.on('mostready', function() {
 			// Display every 30 minutes
 		}
 
-		console.log(`\x1b[32mNS\x1b[0m: Shield active app -> \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
+		console.log(`\x1b[32mNvidia Shield\x1b[0m: Active App -> \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
 	});
 
 	this.shield.on('currentmediaappchange', (currentapp) => {
@@ -325,7 +354,7 @@ devices.on('mostready', function() {
 		this.current_media_app = currentapp;
 		this.rmplus.emit("changevolume");
 
-		console.log(`\x1b[32mNS\x1b[0m: Shield active media app -> \x1b[4m\x1b[37m${this.current_media_app}\x1b[0m`);
+		console.log(`\x1b[32mNvidia Shield\x1b[0m: Active Media App -> \x1b[4m\x1b[37m${this.current_media_app}\x1b[0m`);
 	});
 
 	this.shield.on('awake', () => {
@@ -348,7 +377,7 @@ devices.on('mostready', function() {
 			this.rmplus.sendCode("inputtv");
 		}, 1000);
 
-		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[1mWaking up\x1b[0m");
+		console.log("\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1mWaking up\x1b[0m");
 		// lgtv.request('ssap://system.notifications/createToast', {message: "Switching to NVIDIA Shield"});
 	});
 
@@ -364,9 +393,9 @@ devices.on('mostready', function() {
 			clearTimeout(this.lg.timer);
 			this.lg.timer = setTimeout(() => {
 				lgtv.request('ssap://system/turnOff');
-			}, 2500);
+			}, 1000);
 		}
-		console.log("\x1b[32mNS\x1b[0m: NVIDIA Shield -> \x1b[2mGoing to Sleep\x1b[0m");
+		console.log("\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2mGoing to Sleep\x1b[0m");
 	});
 
 	this.shield.subscribe();
@@ -392,23 +421,19 @@ devices.on('mostready', function() {
 			}, 1000);
 		}
 
-		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[1mWake\x1b[0m");
+		console.log("\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[1mWake\x1b[0m");
 	});
 
 	this.nswitch.on('sleep', (current_app) => {
 		// if(this.lg == null) this.lg = { appId: "" };
 
-		// // If Switch is sleeping while in input HDMI2 then turn off TV
-		// if(this.lg.appId == this.nswitch.hdmi) {
-		// 	this.current_media_app = "";
-		// 	// Turn off tv and then the reciever automatically
-		// 	clearTimeout(this.lg.timer);
-		// 	this.lg.timer = setTimeout(() => {
-		// 		lgtv.request('ssap://system/turnOff');
-		// 	}, 2500);
-		// }
+		// If Switch is sleeping while in input HDMI2 then turn on NVIDIA Shield
+		if(this.lg.appId == this.nswitch.hdmi) {
+			this.current_media_app = "";
+			this.shield.wake();
+		}
 
-		console.log("\x1b[33mSW\x1b[0m: Nintendo Switch -> \x1b[2mSleep\x1b[0m");
+		console.log("\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[2mSleep\x1b[0m");
 	});
 
 	this.nswitch.subscribe();
