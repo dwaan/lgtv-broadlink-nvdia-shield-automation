@@ -223,7 +223,7 @@ devices.on('ready', function() {
 					// This just a failsafe if the reciever didn't switch it automatically
 					if (res.appId == this.nswitch.hdmi) {
 						// Set reciever to Switch input
-						this.rmplus.sendCode("inputswitch");
+						// this.rmplus.sendCode("inputswitch");
 					} else {
 						// Set reciever to TV input
 						this.rmplus.sendCode("inputtv");
@@ -468,8 +468,6 @@ setInterval(() => {
 			let weather = JSON.parse(body);
 			data = weather.main.temp;
 		}
-
-		// console.log("\x1b[36mWeather\x1b[0m: Current temperature -> " + data + " C");
 
 		fs.writeFile( "temperature.txt", data, function(err) {
 			if(err) return false;

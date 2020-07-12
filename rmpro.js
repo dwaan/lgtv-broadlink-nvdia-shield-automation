@@ -66,7 +66,7 @@ if (process.argv.length < 3) {
 		});
 	} else {
 		b.on("deviceReady", (dev) => {
-			if(dev.type == "RM2") {
+			if(dev.type == "RMPro") {
 				console.log("Connected -> " + dev.host.address)
 				if (learn == "learn" || learn == "l") {
 					console.log("Waiting for input ->", file);
@@ -100,10 +100,10 @@ if (process.argv.length < 3) {
 					console.log("Sending data ->", file);
 					dev.sendData(bufferFile("code/" + file + ".bin"));
 
-					// var timer = setInterval(function(){
-					// 	clearInterval(timer);
-					// 	process.exit();
-					// }, 500);
+					var timer = setInterval(function(){
+						clearInterval(timer);
+						process.exit();
+					}, 500);
 				}
 			}
 		});
