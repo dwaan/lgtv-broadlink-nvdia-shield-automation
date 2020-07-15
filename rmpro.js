@@ -67,6 +67,11 @@ if (process.argv.length < 3) {
 	} else {
 		b.on("deviceReady", (dev) => {
 			if(dev.type == "RMPro") {
+				// Buffer mydata
+				function bufferFile(relPath) {
+					return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
+				}
+
 				console.log("Connected -> " + dev.host.address)
 				if (learn == "learn" || learn == "l") {
 					console.log("Waiting for input ->", file);
@@ -91,12 +96,14 @@ if (process.argv.length < 3) {
 					});
 
 					dev.enterLearning();
-				} else {
-					// Buffer mydata
-					function bufferFile(relPath) {
-						return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
-					}
+				} else if (learn == "sendcode" || learn == "sc") {
+					console.log("Sending data ->", file);
 
+					data = new Buffer.from(file, 'ascii');
+					dev.sendData(data);
+
+					process.exit();
+				} else {
 					console.log("Sending data ->", file);
 					dev.sendData(bufferFile("code/" + file + ".bin"));
 
