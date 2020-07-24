@@ -73,6 +73,7 @@ devices.lg = null;
 devices.shield = null;
 devices.mp1 = null;
 devices.rmplus = null;
+devices.rmmini3 = null;
 devices.nswitch = null;
 
 
@@ -101,7 +102,11 @@ shield.connect(false);
 // Connect to Broadlink RM Plus, for Reciever IR blaster
 // Connect to Broadlink MP1, for Reciever Power
 broadlinks.on("deviceReady", (dev) => {
-	if (dev.type == "RMPro") {
+	if (dev.type == "RM3") {
+		devices.rmmini3 = dev;
+
+		console.log("\x1b[35mBroadlink RM Mini 3 C\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+	} else if (dev.type == "RMPro") {
 		function bufferFile(relPath) {
 			return fs.readFileSync(path.join(__dirname, relPath));
 		}
@@ -255,6 +260,26 @@ devices.on('ready', function() {
 // When all devices except TV is on
 devices.on('mostready', function() {
 	console.log('\n\x1b[4mMost devices are ready\x1b[0m', "\n");
+
+
+
+	// Listening to IR command in RM Mini 3
+
+    this.rmmini3.on("rawData", (data) => {
+        console.log("\x1b[35mBroadlink RM Mini 3 C\x1b[0m: \x1b[1mReceived\x1b[0m -> ", data.toString("hex"));
+        this.rmmini3.enterLearning();
+    });
+
+    this.rmmini3.intervalCheck = setInterval(() =>{
+        this.rmmini3.checkData();
+    }, 250);
+    this.rmmini3.intervalLearning = setInterval(() =>{
+	    this.rmmini3.enterLearning();
+    }, 10000);
+
+    this.rmmini3.enterLearning();
+	console.log("\x1b[35mBroadlink RM Mini 3 C\x1b[0m: \x1b[1mListening IR Code\x1b[0m", getDateTime());
+
 
 
 	// Pioner Reciever IR Command
