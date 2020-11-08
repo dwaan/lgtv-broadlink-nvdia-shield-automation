@@ -66,7 +66,10 @@ if (process.argv.length < 3) {
 		});
 	} else {
 		b.on("deviceReady", (dev) => {
+			console.log("Found:", dev.type, dev.host.address);
+
 			if(dev.type == "RMPro") {
+
 				// Buffer mydata
 				function bufferFile(relPath) {
 					return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
@@ -93,6 +96,24 @@ if (process.argv.length < 3) {
 
 							process.exit();
 						});
+					});
+
+					dev.enterLearning();
+				} else if (learn == "listen") {
+					var index = 16;
+
+					console.log("Waiting for input", "\r");
+
+					var timer = setInterval(function(){
+						dev.checkData();
+					}, 500);
+
+					dev.on("rawData", (data) => {
+						data = new Buffer.from(data, 'ascii').toString('hex');
+
+						console.log("\""+ file + index++ + "\": \"" + data + "\",");
+
+						dev.enterLearning();
 					});
 
 					dev.enterLearning();
