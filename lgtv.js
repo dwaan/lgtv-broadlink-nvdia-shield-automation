@@ -207,6 +207,9 @@ devices.on('ready', function() {
 
 	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
 		if (res.appId == "") {
+			// Turn off reciever
+			this.mp1.emit("receiveroff");
+
 			console.log("\x1b[36mLG TV\x1b[0m: TV -> \x1b[2mSleep\x1b[0m");
 		} else {
 			if (this.lg.appId == "") {
