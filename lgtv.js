@@ -235,9 +235,11 @@ devices.on('ready', function() {
 
 		// This just a failsafe if the reciever didn't switch it automatically
 		if (res.appId == this.nswitch.hdmi) {
+			if (this.lg.soundOutput == 'external_arc') this.mp1.emit("receiveron");
 			// Set reciever to Switch input
 			this.rmplus.sendCode("inputswitch");
 		} else {
+			if (this.lg.soundOutput != 'external_arc') this.mp1.emit("receiveroff");
 			// Set reciever to TV input
 			this.rmplus.sendCode("inputtv");
 		}
@@ -248,6 +250,7 @@ devices.on('ready', function() {
 			console.log('\x1b[36mLG TV\x1b[0m: Sound Output -> Error while getting current sound output', err, res);
 		} else {
 			console.log('\x1b[36mLG TV\x1b[0m: Sound Output -> %s', res.soundOutput);
+			this.lg.soundOutput = res.soundOutput;
 
 			if (res.soundOutput == 'external_arc') {
 				// Turn on receiver
