@@ -139,8 +139,10 @@ broadlinks.on("deviceReady", (dev) => {
 
 		console.log("\x1b[35mBroadlink RM Pro+\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
 	} else if (dev.type == "MP1") {
-		devices.mp1 = dev;
-		console.log("\x1b[33mBroadlink MP1\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+		if(dev.host.address == "192.168.1.102") {
+			devices.mp1 = dev;
+			console.log("\x1b[33mBroadlink MP1\x1b[0m: \x1b[1mConnected\x1b[0m", getDateTime());
+		}
 	}
 });
 broadlinks.discover();
