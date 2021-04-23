@@ -13,7 +13,7 @@ let
 	}),
 	// NVIDIA Shield
 	nvidiaShieldAdb = require('nvidia-shield-adb'),
-	shield = new nvidiaShieldAdb('192.168.1.106'),
+	shield = new nvidiaShieldAdb('192.168.1.108'),
 	// Broadlink MP1 and  RM Plus
 	broadlink = require('broadlinkjs'),
 	broadlinks = new broadlink(),
