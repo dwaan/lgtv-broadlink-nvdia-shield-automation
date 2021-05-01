@@ -19,7 +19,7 @@ let
 	broadlinks = new broadlink(),
 	// NVIDIA Shield
 	powerStateWithPing = require('power-state-with-ping'),
-	nswitch = new powerStateWithPing('192.168.1.110', 10000),
+	nswitch = new powerStateWithPing('192.168.1.106', 10000),
 	// Costume vars
 	devices = {}
 ;
