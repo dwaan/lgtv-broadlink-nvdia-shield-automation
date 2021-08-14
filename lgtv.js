@@ -35,7 +35,6 @@ let app_stereo = [
 	"com.google.android.youtube.tv",
 	"com.turner.cnvideoapp",
 	"com.webos.app.livetv",
-	"com.apple.android.music",
 	"youtube.leanback.v4"
 ];
 
@@ -215,13 +214,14 @@ devices.on('ready', function() {
 			console.log("\x1b[36mLG TV\x1b[0m: TV -> \x1b[2mSleep\x1b[0m");
 		} else {
 			if (this.lg.appId == "") {
+				// Press back button to dismiss menu
 				console.log(`\x1b[36mLG TV\x1b[0m: TV -> \x1b[1mWake\x1b[0m`);
 			}
 			console.log(`\x1b[36mLG TV\x1b[0m: TV app -> \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
 		}
 		this.lg.appId = res.appId;
 
-		if(res.appId == this.shield.hdmi && this.shield.is_sleep)  {
+		if(res.appId == this.shield.hdmi && (this.shield.is_sleep || this.shield.is_sleep == undefined))  {
 			// If input is hdmi1 make NVIDIA Shield awake
 			this.shield.wake();
 		} else if(res.appId != this.shield.hdmi && !this.shield.is_sleep) {
@@ -237,7 +237,18 @@ devices.on('ready', function() {
 
 		// This just a failsafe if the reciever didn't switch it automatically
 		if (res.appId == this.nswitch.hdmi) {
-			if (this.lg.soundOutput == 'external_arc') this.mp1.emit("receiveron");
+			this.mp1.emit("receiveron");
+			// Force HDMI output to HDMI-ARC
+			if(this.lg.soundOutput != 'external_arc') {
+				// Force sound output to HDMI-ARC
+				lgtv.request('ssap://com.webos.service.apiadapter/audio/changeSoundOutput', {
+					output: 'external_arc'
+				}, (err, res) => {
+					if (!res || err || res.errorCode || !res.returnValue) {
+						console.log('\x1b[36mLG TV\x1b[0m: Sound Output -> Error while changing sound output');
+					}
+				});
+			}
 			// Set reciever to Switch input
 			this.rmplus.sendCode("inputswitch");
 		} else {
@@ -303,12 +314,18 @@ devices.on('mostready', function() {
 	// Pioner Reciever Power
 
 	this.mp1.on('receiveron', () => {
-		this.mp1.set_power(3,1);
-		console.log("\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> \x1b[1mON\x1b[0m")
+		clearTimeout(this.mp1.timer);
+		this.mp1.timer = setTimeout(() => {
+			this.mp1.set_power(3,1);
+			console.log("\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> \x1b[1mON\x1b[0m")
+		}, 1000);
 	});
 	this.mp1.on('receiveroff', () => {
-		this.mp1.set_power(3,0);
-		console.log("\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> \x1b[2mOFF\x1b[0m")
+		clearTimeout(this.mp1.timer);
+		this.mp1.timer = setTimeout(() => {
+			this.mp1.set_power(3,0);
+			console.log("\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> \x1b[2mOFF\x1b[0m")
+		}, 1000);
 	});
 
 
@@ -474,7 +491,7 @@ setInterval(() => {
 
 		if(!err) {
 			let weather = JSON.parse(body);
-			data = weather.main.temp;
+			data = weather.main.temp + "";
 		}
 
 		fs.writeFile( "temperature.txt", data, function(err) {
