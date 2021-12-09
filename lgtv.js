@@ -480,22 +480,34 @@ let devicecheck = setInterval(() => {
 
 
 // openweathermap.org API to get current temperature
-let apiKey = '792a714c5972745a0c059538681b9d7c';
+let apiKey = '40dc2517a33b8ddb7aac60c64a7b3f80';
 let city = 'tel-aviv';
 let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
 
 // Every 5 minutes the script will write temperature to temperature.txt
-setInterval(() => {
+function updateTemperature() {
 	request(url, function (err, response, body) {
-		var data = "25";
+		var temperature = "0";
+		var humidity = "0";
 
 		if(!err) {
 			let weather = JSON.parse(body);
-			data = weather.main.temp + "";
+			if (weather.main) {
+				temperature = weather.main.temp + "";
+				humidity = weather.main.humidity + "";
+				console.log("\x1b[37mWeather\x1b[0m: Status -> ", weather.weather);
+			} else console.log("\x1b[37mWeather\x1b[0m: Status -> ", weather.message);
 		}
 
-		fs.writeFile( "temperature.txt", data, function(err) {
+		fs.writeFile( "temperature.txt", temperature, function(err) {
+			if(err) return false;
+		});
+		fs.writeFile( "humidity.txt", humidity, function(err) {
 			if(err) return false;
 		});
 	});
+}
+updateTemperature();
+setInterval(() => {
+	updateTemperature()
 }, 5 * 60 * 1000);
