@@ -147,6 +147,7 @@ broadlinks.on("deviceReady", (dev) => {
 broadlinks.discover();
 
 // Connect to LG TV
+lgtv.inputTimer = false;
 lgtv.on('connect', () => {
 	devices.lg = {};
 	devices.lg.appId = "";
@@ -179,7 +180,7 @@ lgtv.on('error', (err) => {
 // When all devices is on
 devices.on('ready', function() {
 	console.log('\n\x1b[4mAll devices are ready\x1b[0m', "\n");
-	lgtv.request('ssap://system.notifications/createToast', {message: "All devices are connected"});
+	lgtv.request('ssap://system.notifications/createToast', {message: "TV Automation: On"});
 
 	lgtv.subscribe('ssap://com.webos.service.tvpower/power/getPowerState', (err, res) => {
 	    if (!res || err || res.errorCode) {
@@ -250,11 +251,19 @@ devices.on('ready', function() {
 				});
 			}
 			// Set reciever to Switch input
-			this.rmplus.sendCode("inputswitch");
+			if (this.lg.inputTimer) clearInterval(this.lg.inputTimer);
+			this.lg.inputTimer = setInterval(() => {
+				this.rmplus.sendCode("inputswitch");
+				clearInterval(this.lg.inputTimer);
+			}, 3000);
 		} else {
-			if (this.lg.soundOutput != 'external_arc') this.mp1.emit("receiveroff");
+			if (this.lg.soundOutput != 'external_arc' && this.mp1) this.mp1.emit("receiveroff");
 			// Set reciever to TV input
-			this.rmplus.sendCode("inputtv");
+			if (this.lg.inputTimer) clearInterval(this.lg.inputTimer);
+			this.lg.inputTimer = setInterval(() => {
+				this.rmplus.sendCode("inputtv");
+				clearInterval(this.lg.inputTimer);
+			}, 3000);
 		}
 	});
 
@@ -278,8 +287,7 @@ devices.on('ready', function() {
 // When all devices except TV is on
 devices.on('mostready', function() {
 	console.log('\n\x1b[4mMost devices are ready\x1b[0m', "\n");
-
-
+	
 
 	// Pioner Reciever IR Command
 
@@ -296,7 +304,7 @@ devices.on('mostready', function() {
 					dev.sound_mode = "stereo";
 					dev.sendCode("soundalc", "soundstereo"); // Add longer delay
 					console.log("\x1b[35mBroadlink\x1b[0m: Sound -> \x1b[4m\x1b[37mStereo Sound\x1b[0m");
-					lgtv.request('ssap://system.notifications/createToast', {message: "Sound is Extra Stereo"});
+					lgtv.request('ssap://system.notifications/createToast', {message: "Sound: Stereo"});
 				}
 			} else if (this.lg.appId != "") {
 				// Set reciever mode to auto surround sound for other
@@ -304,7 +312,7 @@ devices.on('mostready', function() {
 					dev.sound_mode = "soundauto";
 					dev.sendCode("soundalc", "soundauto"); // Add longer delay
 					console.log("\x1b[35mBroadlink\x1b[0m: Sound -> \x1b[4m\x1b[37mSurround Sound\x1b[0m");
-					lgtv.request('ssap://system.notifications/createToast', {message: "Sound is Auto Surround"});
+					lgtv.request('ssap://system.notifications/createToast', {message: "Sound: Auto Surround"});
 				}
 			}
 		}, 1500);
@@ -495,8 +503,8 @@ function updateTemperature() {
 			if (weather.main) {
 				temperature = weather.main.temp + "";
 				humidity = weather.main.humidity + "";
-				console.log("\x1b[37mWeather\x1b[0m: Status -> ", weather.weather);
-			} else console.log("\x1b[37mWeather\x1b[0m: Status -> ", weather.message);
+				console.log("\x1b[37mWeather\x1b[0m: " + weather.weather[0].main, weather.weather[0].id, weather.weather[0].description);
+			} else console.log("\x1b[37mWeather\x1b[0m: ", weather.message);
 		}
 
 		fs.writeFile( "temperature.txt", temperature, function(err) {
