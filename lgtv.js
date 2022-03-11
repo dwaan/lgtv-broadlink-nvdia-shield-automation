@@ -333,7 +333,7 @@ devices.on('mostready', function() {
 		this.mp1.timer = setTimeout(() => {
 			this.mp1.set_power(3,0);
 			console.log("\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> \x1b[2mOFF\x1b[0m")
-		}, 1000);
+		}, 5000);
 	});
 
 
@@ -437,14 +437,13 @@ devices.on('mostready', function() {
 	// Nintendo Switch
 
 	this.nswitch.on('awake', (current_app) => {
-		// Disabling this as it already handled by the HDMI and Home Automation
-		// if(this.lg == null) this.lg = { appId: "" };
+		if(this.lg == null) this.lg = { appId: "" };
 
-		// // Wake up tv and then the reciever automatically
-		// if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
+		// Wake up tv and then the reciever automatically
+		if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
 
-		// // Switch to Pioneer input
-		// lgtv.request('ssap://system.launcher/launch', {id: this.nswitch.hdmi});
+		// Switch to Pioneer input
+		lgtv.request('ssap://system.launcher/launch', {id: this.nswitch.hdmi});
 
 		if(this.lg.appId == this.nswitch.hdmi) {
 			// Delayed to make sure everything is on first
@@ -458,7 +457,7 @@ devices.on('mostready', function() {
 	});
 
 	this.nswitch.on('sleep', (current_app) => {
-		// if(this.lg == null) this.lg = { appId: "" };
+		if(this.lg != null) this.lg = { appId: "" };
 
 		// If Switch is sleeping while in input HDMI2 then turn on NVIDIA Shield
 		if(this.lg.appId == this.nswitch.hdmi) {
