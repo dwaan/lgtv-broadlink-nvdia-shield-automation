@@ -225,7 +225,7 @@ devices.on('ready', function() {
 			// Turn on/off NVIDIA Shield based on TV current input
 			if(this.lg.appId == this.shield.hdmi && (this.shield.is_sleep || this.shield.is_sleep == undefined))
 				this.shield.wake();
-			else if(this.lg.appId != this.shield.hdmi && !this.shield.is_sleep) {
+			else if(this.lg.appId != this.shield.hdmi && !this.shield.is_sleep)
 				this.shield.sleep();
 
 			// Change sound mode in receiver
