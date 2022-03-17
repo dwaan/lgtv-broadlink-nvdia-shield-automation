@@ -321,6 +321,7 @@ devices.on('mostready', function() {
 		if(this.mp1.interval) clearInterval(this.mp1.interval);
 		this.mp1.interval = setInterval(() => {
 			this.mp1.set_power(3,1);
+			clearInterval(this.mp1.interval);
 			console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[1mON\x1b[0m`);	
 		}, 1000);
 	});
@@ -328,6 +329,7 @@ devices.on('mostready', function() {
 		if(this.mp1.interval) clearInterval(this.mp1.interval);
 		this.mp1.interval = setInterval(() => {
 			this.mp1.set_power(3,0);
+			clearInterval(this.mp1.interval);
 			console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[2mOFF\x1b[0m`);
 		}, 1000);
 	});
