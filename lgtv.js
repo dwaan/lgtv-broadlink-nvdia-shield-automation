@@ -168,12 +168,12 @@ lgtv.on('prompt', () => {
 	console.log(`${ID}\x1b[36mLG TV\x1b[0m: Please authorize on LG TV`);
 });
 lgtv.on('close', () => {
+	// turn off receiver
+	this.mp1.emit("receiveroff");
+
 	this.force_emit = true;
 	if(this.lg != null) this.lg.appId = "";
 	console.log(`${ID}\x1b[36mLG TV\x1b[0m: Status -> 🚪 Close ${getDateTime()}`);
-	
-	// turn off receiver
-	this.mp1.emit("receiveroff");
 });
 lgtv.on('error', (err) => {
 	this.force_emit = true;
@@ -318,12 +318,18 @@ devices.on('mostready', function() {
 	// Pioner Reciever Power
 
 	this.mp1.on('receiveron', () => {
-		this.mp1.set_power(3,1);
-		console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[1mON\x1b[0m`);
+		if(this.mp1.interval) clearInterval(this.mp1.interval);
+		this.mp1.interval = setInterval(() => {
+			this.mp1.set_power(3,1);
+			console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[1mON\x1b[0m`);	
+		}, 1000);
 	});
 	this.mp1.on('receiveroff', () => {
-		this.mp1.set_power(3,0);
-		console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[2mOFF\x1b[0m`);
+		if(this.mp1.interval) clearInterval(this.mp1.interval);
+		this.mp1.interval = setInterval(() => {
+			this.mp1.set_power(3,0);
+			console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[2mOFF\x1b[0m`);
+		}, 1000);
 	});
 
 	// NVIDIA Switch
