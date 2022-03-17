@@ -169,10 +169,10 @@ lgtv.on('prompt', () => {
 });
 lgtv.on('close', () => {
 	// turn off receiver
-	this.mp1.emit("receiveroff");
+	devices.mp1.emit("receiveroff");
 
 	this.force_emit = true;
-	if(this.lg != null) this.lg.appId = "";
+	if(devices.lg != null) devices.lg.appId = "";
 	console.log(`${ID}\x1b[36mLG TV\x1b[0m: Status -> 🚪 Close ${getDateTime()}`);
 });
 lgtv.on('error', (err) => {
