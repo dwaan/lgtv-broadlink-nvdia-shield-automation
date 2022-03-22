@@ -157,7 +157,7 @@ lgtv.on('connect', () => {
 
 	// Set audio output to HDMI-ARC
 	devices.lg.setAudioToHDMIARC = function() {
-		if(this.lg.soundOutput != 'external_arc') {
+		if(this.soundOutput != 'external_arc') {
 			lgtv.request('ssap://com.webos.service.apiadapter/audio/changeSoundOutput', {
 				output: 'external_arc'
 			}, (err, res) => {
@@ -180,12 +180,6 @@ lgtv.on('prompt', () => {
 	console.log(`${ID}\x1b[36mLG TV\x1b[0m: Please authorize on LG TV`);
 });
 lgtv.on('close', () => {
-	// turn off receiver and shield
-	devices.mp1.emit("receiveroff");
-	devices.shield.sleep();
-
-	this.force_emit = true;
-	if(devices.lg != null) devices.lg.appId = "";
 	console.log(`${ID}\x1b[36mLG TV\x1b[0m: Status -> 🚪 Close ${getDateTime()}`);
 });
 lgtv.on('error', (err) => {
@@ -221,7 +215,16 @@ devices.on('ready', function() {
 		        statuses += 'Power on reason: ' + statusPowerOnReason;
 	        }
 
-	        console.log(`${ID}\x1b[36mLG TV\x1b[0m: Status -> 💬 ${statuses}`);
+			if(statuses == "State: Suspend") {
+				// turn off receiver and shield
+				this.mp1.emit("receiveroff");
+				this.shield.sleep();
+
+				this.force_emit = true;
+				if(this.lg != null) this.lg.appId = "";
+			}
+
+			console.log(`${ID}\x1b[36mLG TV\x1b[0m: Status -> 💬 ${statuses}`);
 	    }
 	});
 
@@ -248,7 +251,7 @@ devices.on('ready', function() {
 			if(this.lg.appId == this.shield.hdmi) this.shield.wake();
 			else this.shield.sleep();
 
-			// Set reciever input
+			// Set reciever input to TV for non switch
 			if(this.lg.appId != this.nswitch.hdmi) {
 				if(this.lg.inputTimer) clearTimeout(this.lg.inputTimer);
 				this.lg.inputTimer = setTimeout(() => {
@@ -258,7 +261,7 @@ devices.on('ready', function() {
 
 			// Change sound mode in receiver
 			if(this.lg.appId != "" && this.lg.appId != this.shield.hdmi) this.current_media_app = this.lg.appId;
-			
+
 			// Switch reciever sound mode accordingly
 			this.rmplus.emit("changevolume");
 		}
@@ -268,11 +271,12 @@ devices.on('ready', function() {
 		if(!res || err || res.errorCode) {
 			console.log(`${ID}\x1b[36mLG TV\x1b[0m: Sound Output -> 🔈 Error while getting current sound output | ${err} | ${res}`);
 		} else {
-			console.log(`${ID}\x1b[36mLG TV\x1b[0m: Sound Output -> 🔈 ${res.soundOutput}`);
 			this.lg.soundOutput = res.soundOutput;
-
+			
 			// Turn on/off receiver
 			if(res.soundOutput == 'external_arc') this.mp1.emit("receiveron");
+
+			console.log(`${ID}\x1b[36mLG TV\x1b[0m: Sound Output -> 🔈 ${res.soundOutput}`);
 		}
 	});
 });
@@ -346,7 +350,7 @@ devices.on('mostready', function() {
 	this.shield.on('currentappchange', (currentapp) => {
 		if(currentapp == "org.xbmc.kodi") lgtv.request('ssap://system.notifications/createToast', { message: "Go to sleep 🐒" });
 		this.shield.wake();
-		console.log(`\x1b[32mNvidia Shield\x1b[0m: Active App -> \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
+		console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Active App -> 📱 \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
 	});
 
 	this.shield.on('currentmediaappchange', (currentapp) => {
@@ -356,14 +360,14 @@ devices.on('mostready', function() {
 		this.rmplus.emit("changevolume");
 		this.shield.wake();
 
-		console.log(`\x1b[32mNvidia Shield\x1b[0m: Active Media App -> \x1b[4m\x1b[37m${this.current_media_app}\x1b[0m`);
+		console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Active Media App -> 📱 \x1b[4m\x1b[37m${this.current_media_app}\x1b[0m`);
 	});
 
 	// When shield is awake
 	this.shield.on('awake', () => {
 		if(!this.lg) return;
 		
-		console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1mWaking up\x1b[0m`);
+		if(this.shield.is_sleep) console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1mWaking up\x1b[0m`);
 		this.shield.is_sleep = false;
 
 		// Wake up tv, the reciever should automatically on also
@@ -440,7 +444,7 @@ let devicecheck = setInterval(() => {
 		if(!devices.mostready) devices.emit('mostready');
 		devices.emit('ready');
 		clearInterval(devicecheck);
-	} else if(devices.nswitch != null && devices.mp1 != null && devices.mp1 != null && devices.rmplus != null && devices.shield != null) {
+	} else if(devices.nswitch != null && devices.mp1 != null && devices.rmplus != null && devices.shield != null) {
 		this.force_emit = true;
 		devices.emit('mostready');
 		devices.mostready = false;
