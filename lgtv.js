@@ -156,6 +156,19 @@ lgtv.on('connect', () => {
 	devices.lg.on = devices.lg.emitter.on;
 	devices.lg.emit = devices.lg.emitter.emit;
 
+	// Set audio output to HDMI-ARC
+	devices.lg.setAudioToHDMIARC = function() {
+		if(this.lg.soundOutput != 'external_arc') {
+			lgtv.request('ssap://com.webos.service.apiadapter/audio/changeSoundOutput', {
+				output: 'external_arc'
+			}, (err, res) => {
+				if(!res || err || res.errorCode || !res.returnValue) {
+					console.log(`${ID}\x1b[36mLG TV\x1b[0m: Sound Output -> 🔈 Error while changing sound output`);
+				}
+			});
+		}
+	}
+
 	if(this.force_emit) {
 		this.force_emit = false;
 		devices.emit('ready');
@@ -181,7 +194,8 @@ lgtv.on('error', (err) => {
 // When all devices is on
 devices.on('ready', function() {
 	console.log(`${ID}\x1b[4mAll devices are ready ...\x1b[0m`);
-	lgtv.request('ssap://system.notifications/createToast', {message: "TV Automation: On"});
+
+	lgtv.request('ssap://system.notifications/createToast', { message: "TV Automation: On" });
 
 	lgtv.subscribe('ssap://com.webos.service.tvpower/power/getPowerState', (err, res) => {
 	    if(!res || err || res.errorCode) {
@@ -234,15 +248,7 @@ devices.on('ready', function() {
 			// This just a failsafe if the reciever didn't switch it automatically
 			if(this.lg.appId == this.nswitch.hdmi) {
 				// Set audio output to HDMI-ARC
-				if(this.lg.soundOutput != 'external_arc') {
-					lgtv.request('ssap://com.webos.service.apiadapter/audio/changeSoundOutput', {
-						output: 'external_arc'
-					}, (err, res) => {
-						if(!res || err || res.errorCode || !res.returnValue) {
-							console.log(`${ID}\x1b[36mLG TV\x1b[0m: Sound Output -> 🔈 Error while changing sound output`);
-						}
-					});
-				}
+				this.lg.setAudioToHDMIARC();
 
 				// Set reciever to HDMI-ARC
 				if(this.lg.inputTimer) clearInterval(this.lg.inputTimer);
@@ -260,7 +266,7 @@ devices.on('ready', function() {
 						this.rmplus.sendCode("inputtv");
 						clearInterval(this.lg.inputTimer);
 					}, 3000);
-				} else this.mp1.emit("receiveroff");
+				}
 			}
 		}
 	});
@@ -274,7 +280,6 @@ devices.on('ready', function() {
 
 			// Turn on/off receiver
 			if(res.soundOutput == 'external_arc') this.mp1.emit("receiveron");
-			else this.mp1.emit("receiveroff");
 		}
 	});
 });
@@ -298,7 +303,7 @@ devices.on('mostready', function() {
 					dev.sound_mode = "stereo";
 					dev.sendCode("soundalc", "soundstereo"); // Add longer delay
 					console.log(`${ID}\x1b[35mBroadlink\x1b[0m: Sound -> 🔈 \x1b[4m\x1b[37mStereo Sound\x1b[0m`);
-					lgtv.request('ssap://system.notifications/createToast', {message: "Sound: Stereo"});
+					lgtv.request('ssap://system.notifications/createToast', { message: "Sound: Stereo" });
 				}
 			} else if(this.lg.appId != "") {
 				// Set reciever mode to auto surround sound for other
@@ -306,7 +311,7 @@ devices.on('mostready', function() {
 					dev.sound_mode = "soundauto";
 					dev.sendCode("soundalc", "soundauto"); // Add longer delay
 					console.log(`${ID}\x1b[35mBroadlink\x1b[0m: Sound -> 🔈 \x1b[4m\x1b[37mSurround Sound\x1b[0m`);
-					lgtv.request('ssap://system.notifications/createToast', {message: "Sound: Auto Surround"});
+					lgtv.request('ssap://system.notifications/createToast', { message: "Sound: Auto Surround" });
 				}
 			}
 		}, 1500);
@@ -345,9 +350,7 @@ devices.on('mostready', function() {
 	});
 
 	this.shield.on('currentappchange', (currentapp) => {
-		if(currentapp == "org.xbmc.kodi") {
-			lgtv.request('ssap://system.notifications/createToast', {message: "Go to sleep 🐒"});
-		}
+		if(currentapp == "org.xbmc.kodi") lgtv.request('ssap://system.notifications/createToast', { message: "Go to sleep 🐒" });
 		this.shield.wake();
 		console.log(`\x1b[32mNvidia Shield\x1b[0m: Active App -> \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
 	});
@@ -373,11 +376,6 @@ devices.on('mostready', function() {
 		if(this.lg.appId == "") {
 			// Wake up tv, the reciever should automatically on also
 			this.rmplus.sendCode("tvpower");
-		} else {
-			// When TV already awake, make sure reciever is awake 
-			// according to current TV sound output.
-			if(this.lg.soundOutput == 'external_arc') this.mp1.emit("receiveron");
-			else this.mp1.emit("receiveroff");
 		}
 
 		// Delayed to make sure everything is on first

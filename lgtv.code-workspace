@@ -2,6 +2,12 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../nvidia-shield-adb"
+		},
+		{
+			"path": "../power-state-with-ping"
 		}
 	],
 	"settings": {}
