@@ -148,7 +148,6 @@ broadlinks.on("deviceReady", (dev) => {
 broadlinks.discover();
 
 // Connect to LG TV
-lgtv.inputTimer = false;
 lgtv.on('connect', () => {
 	devices.lg = {};
 	devices.lg.appId = "";
@@ -181,8 +180,12 @@ lgtv.on('prompt', () => {
 	console.log(`${ID}\x1b[36mLG TV\x1b[0m: Please authorize on LG TV`);
 });
 lgtv.on('close', () => {
+	// turn off receiver and shield
+	devices.mp1.emit("receiveroff");
+	devices.shield.sleep();
+
 	this.force_emit = true;
-	if(this.lg != null) this.lg.appId = "";
+	if(devices.lg != null) devices.lg.appId = "";
 	console.log(`${ID}\x1b[36mLG TV\x1b[0m: Status -> 🚪 Close ${getDateTime()}`);
 });
 lgtv.on('error', (err) => {
@@ -206,7 +209,7 @@ devices.on('ready', function() {
 	        let statusPowerOnReason = (res && res.powerOnReason ? res.powerOnReason : null);
 	        let statuses = "";
 
-	        if(statusState) {
+			if(statusState) {
 		        statuses += 'State: ' + statusState;
 	        }
 	        if(statusProcessing) {
@@ -228,46 +231,36 @@ devices.on('ready', function() {
 		if(res.appId == "") {
 			console.log(`${ID}\x1b[36mLG TV\x1b[0m: TV -> \x1b[2m🛌 Sleep\x1b[0m`);
 		} else {
-			if(this.lg.appId == "") console.log(`${ID}\x1b[36mLG TV\x1b[0m: TV -> \x1b[1m🌞 Wake\x1b[0m`);
+			if(this.lg.appId == "") {
+				// Turn on reciever
+				this.mp1.emit("receiveron");
+
+				// Set audio output to HDMI-ARC
+				this.lg.setAudioToHDMIARC();
+
+				console.log(`${ID}\x1b[36mLG TV\x1b[0m: TV -> \x1b[1m🌞 Wake\x1b[0m`);
+			}
 
 			this.lg.appId = res.appId;
 			console.log(`${ID}\x1b[36mLG TV\x1b[0m: TV app -> 📺 \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
 
 			// Turn on/off NVIDIA Shield based on TV current input
-			if(this.lg.appId == this.shield.hdmi && (this.shield.is_sleep || this.shield.is_sleep == undefined))  {
-				this.shield.wake();
-			} else if(this.lg.appId != this.shield.hdmi && !this.shield.is_sleep) {
-				this.shield.sleep();
+			if(this.lg.appId == this.shield.hdmi) this.shield.wake();
+			else this.shield.sleep();
+
+			// Set reciever input
+			if(this.lg.appId != this.nswitch.hdmi) {
+				if(this.lg.inputTimer) clearTimeout(this.lg.inputTimer);
+				this.lg.inputTimer = setTimeout(() => {
+					this.rmplus.sendCode("inputtv");
+				}, 3000);
 			}
 
 			// Change sound mode in receiver
 			if(this.lg.appId != "" && this.lg.appId != this.shield.hdmi) this.current_media_app = this.lg.appId;
+			
 			// Switch reciever sound mode accordingly
 			this.rmplus.emit("changevolume");
-
-			// This just a failsafe if the reciever didn't switch it automatically
-			if(this.lg.appId == this.nswitch.hdmi) {
-				// Set audio output to HDMI-ARC
-				this.lg.setAudioToHDMIARC();
-
-				// Set reciever to HDMI-ARC
-				if(this.lg.inputTimer) clearInterval(this.lg.inputTimer);
-				this.lg.inputTimer = setInterval(() => {
-					this.rmplus.sendCode("inputswitch");
-					clearInterval(this.lg.inputTimer);
-				}, 3000);
-			} else {
-				if(this.lg.soundOutput == 'external_arc') {
-					this.mp1.emit("receiveron");
-
-					// Set reciever to TV input
-					if(this.lg.inputTimer) clearInterval(this.lg.inputTimer);
-					this.lg.inputTimer = setInterval(() => {
-						this.rmplus.sendCode("inputtv");
-						clearInterval(this.lg.inputTimer);
-					}, 3000);
-				}
-			}
 		}
 	});
 
@@ -321,17 +314,18 @@ devices.on('mostready', function() {
 	// Pioner Reciever Power
 
 	this.mp1.on('receiveron', () => {
-		clearTimeout(this.mp1.timer);
-		this.mp1.set_power(3,1);
-		console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[1mON\x1b[0m`);
+		if(this.mp1.timer) clearTimeout(this.mp1.timer);
+		this.mp1.timer = setTimeout(() => {
+			this.mp1.set_power(3,1);
+			console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[1mON\x1b[0m`);	
+		}, 1000);
 	});
 	this.mp1.on('receiveroff', () => {
-		clearTimeout(this.mp1.timer);
-
+		if(this.mp1.timer) clearTimeout(this.mp1.timer);
 		this.mp1.timer = setTimeout(() => {
 			this.mp1.set_power(3,0);
 			console.log(`${ID}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[2mOFF\x1b[0m`);
-		}, 3000);
+		}, 1000);
 	});
 
 	// NVIDIA Switch
@@ -372,14 +366,12 @@ devices.on('mostready', function() {
 		console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1mWaking up\x1b[0m`);
 		this.shield.is_sleep = false;
 
-
-		if(this.lg.appId == "") {
-			// Wake up tv, the reciever should automatically on also
-			this.rmplus.sendCode("tvpower");
-		}
+		// Wake up tv, the reciever should automatically on also
+		if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
 
 		// Delayed to make sure everything is on first
-		setTimeout(() => {
+		if(this.lg.timer) clearTimeout(this.lg.timer);
+		this.lg.timer = setTimeout(() => {
 			// Set input to HDMI1
 			lgtv.request('ssap://system.launcher/launch', {id: this.shield.hdmi});
 
@@ -397,11 +389,8 @@ devices.on('mostready', function() {
 		// If Shield is sleeping while in input HDMI1 then turn off TV
 		if(this.lg.appId == this.shield.hdmi) {
 			this.current_media_app = "";
-			// Turn off tv and then the reciever automatically
-			clearTimeout(this.lg.timer);
-			this.lg.timer = setTimeout(() => {
-				lgtv.request('ssap://system/turnOff');
-			}, 1000);
+			// Turn off tv
+			lgtv.request('ssap://system/turnOff');
 		}
 	});
 
@@ -413,7 +402,7 @@ devices.on('mostready', function() {
 	this.nswitch.on('awake', (current_app) => {
 		if(!this.lg) return;
 
-		// Wake up tv and then the reciever automatically
+		// Wake up tv
 		if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
 
 		// Switch to Pioneer input
