@@ -202,6 +202,8 @@ devices.on('ready', function() {
 	        let statusProcessing = (res && res.processing ? res.processing : null);
 	        let statusPowerOnReason = (res && res.powerOnReason ? res.powerOnReason : null);
 	        let statuses = "";
+			
+			console.log(res);
 
 			if(statusState) {
 		        statuses += 'State: ' + statusState;
@@ -215,7 +217,7 @@ devices.on('ready', function() {
 		        statuses += 'Power on reason: ' + statusPowerOnReason;
 	        }
 
-			if(statuses == "State: Suspend") {
+			if(statuses == "State: Suspend" || statuses == "State: Active Standby") {
 				// turn off receiver and shield
 				this.mp1.emit("receiveroff");
 				this.shield.sleep();
