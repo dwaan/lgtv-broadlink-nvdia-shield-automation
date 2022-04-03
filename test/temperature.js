@@ -1,15 +1,13 @@
-const request = require('request');
-const argv = require('yargs').argv;
+const axios = require('axios').default;
 
-let apiKey = '792a714c5972745a0c059538681b9d7c';
-let city = argv.c || 'tel-aviv';
+let apiKey = '40dc2517a33b8ddb7aac60c64a7b3f80';
+let city = 'tel-aviv';
 let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
 
-request(url, function (err, response, body) {
-	if(err){
-		console.log("25");
-	} else {
-		let weather = JSON.parse(body);
-		console.log(weather.main.temp);
-	}
-});
+axios.get(url)
+	.then(function (response) {
+		console.log(response.data.main.temp);
+	})
+	.catch(function () {
+		console.log(25);
+	})

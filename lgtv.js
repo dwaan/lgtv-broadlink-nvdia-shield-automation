@@ -7,9 +7,10 @@ let
 	fs = require('fs'),
 	path = require('path'),
 	EventEmitter = require('events'),
-	request = require('request'),
+	// Axios
+	axios = require('axios').default,
 	// LG TV
-	lgtv = require('lgtv2/index.js')({
+	lgtv = require('lgtv2')({
 		url: 'ws://192.168.1.105:3000'
 	}),
 	// NVIDIA Shield
@@ -287,7 +288,7 @@ devices.on('mostready', function() {
 
 	// Pioner Reciever IR Command
 
-	this.rmplus.on("changevolume", (data) => {
+	this.rmplus.on("changevolume", () => {
 		var dev = this.rmplus;
 
 		clearTimeout(this.rmplus.timer);
@@ -403,7 +404,7 @@ devices.on('mostready', function() {
 
 	// Nintendo Switch
 
-	this.nswitch.on('awake', (current_app) => {
+	this.nswitch.on('awake', () => {
 		if(!this.lg) return;
 
 		// Wake up tv
@@ -423,7 +424,7 @@ devices.on('mostready', function() {
 		console.log(`${ID}\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
 	});
 
-	this.nswitch.on('sleep', (current_app) => {
+	this.nswitch.on('sleep', () => {
 		if(!this.lg) return;;
 
 		// If Switch is sleeping while in input HDMI2 then turn on NVIDIA Shield
@@ -460,26 +461,29 @@ let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric
 
 // Every 5 minutes the script will write temperature to temperature.txt
 function updateTemperature() {
-	request(url, function (err, response, body) {
-		var temperature = "0";
-		var humidity = "0";
-
-		if(!err) {
-			let weather = JSON.parse(body);
+	var temperature = "0";
+	var humidity = "0";
+	
+	axios.get(url)
+		.then(function (response) {
+			const weather = response.data;
 			if(weather.main) {
 				temperature = weather.main.temp + "";
 				humidity = weather.main.humidity + "";
 				console.log(`${ID}\x1b[37mWeather\x1b[0m: ${weather.weather[0].main} ${weather.weather[0].id} ${weather.weather[0].description}`);
 			} else console.log(`${ID}\x1b[37mWeather\x1b[0m: ${weather.message}`);
-		}
-
-		fs.writeFile( "temperature.txt", temperature, function(err) {
-			if(err) return false;
+		})
+		.catch(function () {
+			console.log(25);
+		})
+		.then(function () {
+			fs.writeFile( "temperature.txt", temperature, function(err) {
+				if(err) return false;
+			});
+			fs.writeFile( "humidity.txt", humidity, function(err) {
+				if(err) return false;
+			});
 		});
-		fs.writeFile( "humidity.txt", humidity, function(err) {
-			if(err) return false;
-		});
-	});
 }
 updateTemperature();
 setInterval(() => {
