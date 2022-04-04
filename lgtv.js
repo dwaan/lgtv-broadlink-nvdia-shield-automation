@@ -30,7 +30,7 @@ let
 
 	// NVIDIA Shield
 	powerStateWithPing = require('power-state-with-ping'),
-	nswitch = new powerStateWithPing('192.168.1.106', 14),
+	nswitch = new powerStateWithPing('192.168.1.106', 15),
 
 	// Wheater Report
 	enableWeatherReport = false,
@@ -286,7 +286,7 @@ devices.on('ready', function() {
 	lgtv.subscribe('ssap://com.webos.service.apiadapter/audio/getSoundOutput', (err, res) => {
 		if(!res || err || res.errorCode) {
 			console.log(`${ID}\x1b[36mLG TV\x1b[0m: Sound Output -> 🔈 Error while getting current sound output | ${err} | ${res}`);
-		} else {
+		} else if(this.lg.soundOutput != res.soundOutput) {
 			this.lg.soundOutput = res.soundOutput;
 			
 			// Turn on/off receiver
