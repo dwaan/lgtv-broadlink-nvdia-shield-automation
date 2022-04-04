@@ -21,7 +21,9 @@ let
 	broadlinks = new broadlink(),
 	// NVIDIA Shield
 	powerStateWithPing = require('power-state-with-ping'),
-	nswitch = new powerStateWithPing('192.168.1.106', 10000),
+	nswitch = new powerStateWithPing('192.168.1.106', 14000),
+	//
+	enableWeatherReport = false;
 	// Costume vars
 	devices = {}
 ;
@@ -455,37 +457,40 @@ let devicecheck = setInterval(() => {
 
 
 // openweathermap.org API to get current temperature
-let apiKey = '40dc2517a33b8ddb7aac60c64a7b3f80';
-let city = 'tel-aviv';
-let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
+function weatherReport() {
+	let apiKey = '40dc2517a33b8ddb7aac60c64a7b3f80';
+	let city = 'tel-aviv';
+	let url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
 
-// Every 5 minutes the script will write temperature to temperature.txt
-function updateTemperature() {
-	var temperature = "0";
-	var humidity = "0";
-	
-	axios.get(url)
-		.then(function (response) {
-			const weather = response.data;
-			if(weather.main) {
-				temperature = weather.main.temp + "";
-				humidity = weather.main.humidity + "";
-				console.log(`${ID}\x1b[37mWeather\x1b[0m: ${weather.weather[0].main} ${weather.weather[0].id} ${weather.weather[0].description}`);
-			} else console.log(`${ID}\x1b[37mWeather\x1b[0m: ${weather.message}`);
-		})
-		.catch(function () {
-			console.log(25);
-		})
-		.then(function () {
-			fs.writeFile( "temperature.txt", temperature, function(err) {
-				if(err) return false;
+	// Every 5 minutes the script will write temperature to temperature.txt
+	function updateTemperature() {
+		var temperature = "0";
+		var humidity = "0";
+		
+		axios.get(url)
+			.then(function (response) {
+				const weather = response.data;
+				if(weather.main) {
+					temperature = weather.main.temp + "";
+					humidity = weather.main.humidity + "";
+					console.log(`${ID}\x1b[37mWeather\x1b[0m: ${weather.weather[0].main} ${weather.weather[0].id} ${weather.weather[0].description}`);
+				} else console.log(`${ID}\x1b[37mWeather\x1b[0m: ${weather.message}`);
+			})
+			.catch(function () {
+				console.log(25);
+			})
+			.then(function () {
+				fs.writeFile( "temperature.txt", temperature, function(err) {
+					if(err) return false;
+				});
+				fs.writeFile( "humidity.txt", humidity, function(err) {
+					if(err) return false;
+				});
 			});
-			fs.writeFile( "humidity.txt", humidity, function(err) {
-				if(err) return false;
-			});
-		});
+	}
+	updateTemperature();
+	setInterval(() => {
+		updateTemperature()
+	}, 5 * 60 * 1000);
 }
-updateTemperature();
-setInterval(() => {
-	updateTemperature()
-}, 5 * 60 * 1000);
+if(enableWeatherReport) weatherReport(); 
