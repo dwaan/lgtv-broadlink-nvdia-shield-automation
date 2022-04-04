@@ -30,7 +30,7 @@ let
 
 	// NVIDIA Shield
 	powerStateWithPing = require('power-state-with-ping'),
-	nswitch = new powerStateWithPing('192.168.1.106', 14000),
+	nswitch = new powerStateWithPing('192.168.1.106', 14),
 
 	// Wheater Report
 	enableWeatherReport = false,
@@ -404,14 +404,16 @@ devices.on('mostready', function() {
 	this.shield.on('sleep', () => {
 		if(!this.lg) return;
 
-		console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2mGoing to Sleep\x1b[0m`);
-		this.shield.is_sleep = true;
+		if(!this.shield.is_sleep) {
+			console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2mGoing to Sleep\x1b[0m`);
+			this.shield.is_sleep = true;
 
-		// If Shield is sleeping while in input HDMI1 then turn off TV
-		if(this.lg.appId == this.shield.hdmi) {
-			this.current_media_app = "";
-			// Turn off tv
-			lgtv.request('ssap://system/turnOff');
+			// If Shield is sleeping while in input HDMI1 then turn off TV
+			if(this.lg.appId == this.shield.hdmi) {
+				this.current_media_app = "";
+				// Turn off tv
+				lgtv.request('ssap://system/turnOff');
+			}
 		}
 	});
 
@@ -419,14 +421,6 @@ devices.on('mostready', function() {
 
 
 	// Nintendo Switch
-
-	this.nswitch.status((status) => {
-		if(!status) {
-			console.log(`${ID}\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
-		} else {
-			this.nswitch.emit(`awake`);
-		}
-	});
 
 	this.nswitch.on('awake', () => {
 		if(!this.lg) this.lg = { appId: "" };
