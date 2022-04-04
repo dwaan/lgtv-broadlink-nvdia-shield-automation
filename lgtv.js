@@ -12,8 +12,12 @@ let
 	axios = require('axios').default,
 
 	// LG TV
+	lgtvId = { 
+		ip: `192.168.1.105`, 
+		mac: `a8:23:fe:ee:92:1c` 
+	},
 	lgtv = require('lgtv2')({
-		url: 'ws://192.168.1.105:3000'
+		url: `ws://${lgtvId.ip}:3000`
 	}),
 
 	// NVIDIA Shield
@@ -192,9 +196,11 @@ lgtv.on('prompt', () => {
 lgtv.on('close', () => {
 	console.log(`${ID}\x1b[36mLG TV\x1b[0m: Status -> 🚪 Close ${getDateTime()}`);
 });
-lgtv.on('error', (err) => {
-	this.force_emit = true;
-	console.log(`${ID}\x1b[36mLG TV\x1b[0m: TV -> 🚫 No Response`);
+lgtv.on('error', () => {
+	if(!this.force_emit) {
+		this.force_emit = true;
+		console.log(`${ID}\x1b[36mLG TV\x1b[0m: TV -> 🚫 No Response`);
+	}
 });
 
 
@@ -259,14 +265,14 @@ devices.on('ready', function() {
 
 			// Turn on/off NVIDIA Shield based on TV current input
 			if(this.lg.appId == this.shield.hdmi) this.shield.wake();
-			else this.shield.sleep();
+			else if(!this.shield.is_sleep) this.shield.sleep();
 
 			// Set reciever input to TV for non switch
 			if(this.lg.appId != this.nswitch.hdmi) {
 				if(this.lg.inputTimer) clearTimeout(this.lg.inputTimer);
 				this.lg.inputTimer = setTimeout(() => {
 					this.rmplus.sendCode("inputtv");
-				}, 3000);
+				}, 2000);
 			}
 
 			// Change sound mode in receiver
@@ -344,22 +350,23 @@ devices.on('mostready', function() {
 
 	// NVIDIA Switch
 
-	this.shield.firstrun = true;
+	this.shield.firstrun = 2;
 	this.shield.status((status) => {
 		this.shield.is_sleep = !status;
 		if(!this.shield.is_sleep) {
 			console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
 			// maje
-			if(this.shield.firstrun) {
+			if(this.shield.firstrun > 0) {
 				this.shield.wake();
-				this.shield.firstrun = false;
+				this.shield.firstrun--;
 			}
 		} else console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
 	});
 
 	this.shield.on('currentappchange', (currentapp) => {
 		if(currentapp == "org.xbmc.kodi") lgtv.request('ssap://system.notifications/createToast', { message: "Go to sleep 🐒" });
-		this.shield.wake();
+		if(this.shield.firstrun == 0) this.shield.wake();
+		else this.shield.firstrun--;
 		console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Active App -> 📱 \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
 	});
 
@@ -375,7 +382,7 @@ devices.on('mostready', function() {
 
 	// When shield is awake
 	this.shield.on('awake', () => {
-		if(!this.lg) return;
+		if(!this.lg) this.lg = { appId: "" };
 		
 		if(this.shield.is_sleep) console.log(`${ID}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1mWaking up\x1b[0m`);
 		this.shield.is_sleep = false;
@@ -391,7 +398,7 @@ devices.on('mostready', function() {
 
 			// Set reciever to TV input
 			this.rmplus.sendCode("inputtv");
-		}, 1000);
+		}, 2000);
 	});
 
 	this.shield.on('sleep', () => {
@@ -413,8 +420,16 @@ devices.on('mostready', function() {
 
 	// Nintendo Switch
 
+	this.nswitch.status((status) => {
+		if(!status) {
+			console.log(`${ID}\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
+		} else {
+			this.nswitch.emit(`awake`);
+		}
+	});
+
 	this.nswitch.on('awake', () => {
-		if(!this.lg) return;
+		if(!this.lg) this.lg = { appId: "" };
 
 		// Wake up tv
 		if(this.lg.appId == "") this.rmplus.sendCode("tvpower");
@@ -427,14 +442,14 @@ devices.on('mostready', function() {
 			setTimeout(() => {
 				// Set reciever to Switch input
 				this.rmplus.sendCode("inputswitch");
-			}, 1000);
+			}, 2000);
 		}
 
 		console.log(`${ID}\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
 	});
 
 	this.nswitch.on('sleep', () => {
-		if(!this.lg) return;;
+		if(!this.lg) return;
 
 		// If Switch is sleeping while in input HDMI2 then turn on NVIDIA Shield
 		if(this.lg.appId == this.nswitch.hdmi) {
