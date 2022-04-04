@@ -7,23 +7,30 @@ let
 	fs = require('fs'),
 	path = require('path'),
 	EventEmitter = require('events'),
+
 	// Axios
 	axios = require('axios').default,
+
 	// LG TV
 	lgtv = require('lgtv2')({
 		url: 'ws://192.168.1.105:3000'
 	}),
+
 	// NVIDIA Shield
 	nvidiaShieldAdb = require('nvidia-shield-adb'),
 	shield = new nvidiaShieldAdb('192.168.1.108'),
+
 	// Broadlink MP1 and  RM Plus
 	broadlink = require('broadlinkjs'),
 	broadlinks = new broadlink(),
+
 	// NVIDIA Shield
 	powerStateWithPing = require('power-state-with-ping'),
 	nswitch = new powerStateWithPing('192.168.1.106', 14000),
-	//
-	enableWeatherReport = false;
+
+	// Wheater Report
+	enableWeatherReport = false,
+
 	// Costume vars
 	devices = {}
 ;
