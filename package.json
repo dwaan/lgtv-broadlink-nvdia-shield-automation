@@ -5,9 +5,9 @@
   "main": "lgtv.js",
   "dependencies": {
     "axios": "^0.26.1",
-    "broadlinkjs": "git+https://github.com/dwaan/broadlinkjs.git",
+    "broadlinkjs-dw": "^0.1.9",
     "lgtv2": "^1.6.3",
-    "nvidia-shield-adb": "git+https://github.com/dwaan/nvidia-shield-adb.git",
+    "nodejs-adb-wrapper": "^1.0.0",
     "power-state-with-ping": "git+https://github.com/dwaan/power-state-with-ping.git"
   },
   "scripts": {

@@ -4,10 +4,13 @@
 			"path": "."
 		},
 		{
-			"path": "../nvidia-shield-adb"
+			"path": "../power-state-with-ping"
 		},
 		{
-			"path": "../power-state-with-ping"
+			"path": "../nodejs-adb-wrapper"
+		},
+		{
+			"path": "../broadlinkjs"
 		}
 	]
 }
