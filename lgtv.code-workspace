@@ -4,13 +4,13 @@
 			"path": "."
 		},
 		{
-			"path": "../power-state-with-ping"
-		},
-		{
 			"path": "../nodejs-adb-wrapper"
 		},
 		{
 			"path": "../broadlinkjs"
+		},
+		{
+			"path": "../nodejs-ping-wrapper"
 		}
 	]
 }

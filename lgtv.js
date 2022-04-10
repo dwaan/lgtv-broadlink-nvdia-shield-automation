@@ -11,16 +11,16 @@ let
 	axios = require('axios').default,
 
 	// LG TV
-	lgtvId = { 
-		ip: `192.168.1.105`, 
-		mac: `a8:23:fe:ee:92:1c` 
+	lgtvId = {
+		ip: `192.168.1.105`,
+		mac: `a8:23:fe:ee:92:1c`
 	},
 	lgtv = require('lgtv2')({
 		url: `ws://${lgtvId.ip}:3000`
 	}),
 
 	// NVIDIA Shield
-	nvidiaShieldAdb = require('nvidia-shield-adb'),
+	nvidiaShieldAdb = require('nodejs-adb-wrapper'),
 	shield = new nvidiaShieldAdb('192.168.1.108'),
 
 	// Broadlink MP1 and  RM Plus
@@ -28,7 +28,7 @@ let
 	broadlinks = new broadlink(),
 
 	// NVIDIA Shield
-	powerStateWithPing = require('power-state-with-ping'),
+	powerStateWithPing = require('nodejs-ping-wrapper'),
 	nswitch = new powerStateWithPing('192.168.1.106', 15),
 
 	// Wheater Report
@@ -76,7 +76,7 @@ function getDateTime() {
 	return `${year}-${month}-${day} \x1b[2m${hour}:${min}:${sec}\x1b[0m`;
 }
 
-function ID() { 
+function ID() {
 	return `${timestamp ? getDateTime() + " - " : ""}🕹  `;
 }
 
@@ -225,7 +225,7 @@ devices.on('ready', function() {
 	        let statusProcessing = (res && res.processing ? res.processing : null);
 	        let statusPowerOnReason = (res && res.powerOnReason ? res.powerOnReason : null);
 	        let statuses = "";
-			
+
 			if(statusState) {
 		        statuses += 'State: ' + statusState;
 	        }
@@ -273,7 +273,7 @@ devices.on('ready', function() {
 
 	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
 		if(err) return;
-		
+
 		if(res.appId == "") {
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[2m🛌 Sleep\x1b[0m`);
 		} else {
@@ -307,7 +307,7 @@ devices.on('ready', function() {
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Sound Output -> 🔈 Error while getting current sound output | ${err} | ${res}`);
 		} else if(this.lg.soundOutput != res.soundOutput) {
 			this.lg.soundOutput = res.soundOutput;
-			
+
 			// Turn on/off receiver
 			if(res.soundOutput == 'external_arc') this.mp1.emit("receiveron");
 
@@ -318,7 +318,7 @@ devices.on('ready', function() {
 // When all devices except TV is on
 devices.on('mostready', function() {
 	console.log(`${ID()}\x1b[4mMost devices are ready...\x1b[0m`);
-	
+
 
 	// Pioner Reciever IR Command
 
@@ -356,7 +356,7 @@ devices.on('mostready', function() {
 		if(this.mp1.timer) clearTimeout(this.mp1.timer);
 		this.mp1.timer = setTimeout(() => {
 			this.mp1.set_power(3,1);
-			console.log(`${ID()}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[1mON\x1b[0m`);	
+			console.log(`${ID()}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[1mON\x1b[0m`);
 		}, 1000);
 	});
 	this.mp1.on('receiveroff', () => {
@@ -370,7 +370,7 @@ devices.on('mostready', function() {
 	// NVIDIA Switch
 
 	this.shield.firstrun = 2;
-	this.shield.status((status) => {
+	this.shield.status(status => {
 		this.shield.is_sleep = !status;
 		if(!this.shield.is_sleep) {
 			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
@@ -382,14 +382,14 @@ devices.on('mostready', function() {
 		} else console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
 	});
 
-	this.shield.on('currentappchange', (currentapp) => {
+	this.shield.on('appChange', currentapp => {
 		if(currentapp == "org.xbmc.kodi") lgtv.request('ssap://system.notifications/createToast', { message: "Go to sleep 🐒" });
 		if(this.shield.firstrun == 0) this.shield.wake();
 		else this.shield.firstrun--;
 		console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Active App -> 📱 \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
 	});
 
-	this.shield.on('currentmediaappchange', (currentapp) => {
+	this.shield.on('playback', currentapp => {
 		// If current media app change, trigger RM Plus event, to change sound mode in receiver
 		this.current_media_app = currentapp;
 
@@ -402,7 +402,7 @@ devices.on('mostready', function() {
 	// When shield is awake
 	this.shield.on('awake', () => {
 		if(!this.lg) this.lg = { appId: "" };
-		
+
 		if(this.shield.is_sleep) console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1mWaking up\x1b[0m`);
 		this.shield.is_sleep = false;
 
@@ -438,7 +438,7 @@ devices.on('mostready', function() {
 
 	// Nintendo Switch
 
-	this.nswitch.status((status) => {
+	this.nswitch.status(status => {
 		if(status) this.nswitch.emit('awake');
 	});
 
@@ -494,7 +494,7 @@ function weatherReport() {
 	function updateTemperature() {
 		var temperature = "0";
 		var humidity = "0";
-		
+
 		axios.get(url)
 			.then(function (response) {
 				const weather = response.data;
@@ -521,4 +521,4 @@ function weatherReport() {
 		updateTemperature()
 	}, 5 * 60 * 1000);
 }
-if(enableWeatherReport) weatherReport(); 
+if(enableWeatherReport) weatherReport();

@@ -8,7 +8,7 @@
     "broadlinkjs-dw": "^0.1.9",
     "lgtv2": "^1.6.3",
     "nodejs-adb-wrapper": "^1.0.0",
-    "power-state-with-ping": "git+https://github.com/dwaan/power-state-with-ping.git"
+    "nodejs-ping-wrapper": "^1.0.0"
   },
   "scripts": {
     "test": "nodemon lgtv.js"
