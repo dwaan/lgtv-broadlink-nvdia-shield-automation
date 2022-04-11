@@ -107,4 +107,4 @@ dist
 humidity.txt
 temperature.txt
 package-lock.json
-*.code-workspace
+lgtv.code-workspace
