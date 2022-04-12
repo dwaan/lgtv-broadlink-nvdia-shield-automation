@@ -1,0 +1,8 @@
+{
+	"folders": [
+		{
+			"name": "SSH FS - themessier",
+			"uri": "ssh://themessier/storage/homebridge/lgtv"
+		}
+	]
+}
