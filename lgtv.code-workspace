@@ -1,20 +1,11 @@
 {
 	"folders": [
 		{
-			"name": "lgtv",
 			"path": "."
 		},
 		{
-			"name": "nodejs-adb-wrapper",
 			"path": "../nodejs-adb-wrapper"
-		},
-		{
-			"name": "nodejs-ping-wrapper",
-			"path": "../nodejs-ping-wrapper"
-		},
-		{
-			"name": "broadlinkjs",
-			"path": "../broadlinkjs"
 		}
-	]
+	],
+	"settings": {}
 }

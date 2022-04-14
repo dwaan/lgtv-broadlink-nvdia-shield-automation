@@ -23,7 +23,10 @@ let
 
 	// NVIDIA Shield
 	nvidiaShieldAdb = require('nodejs-adb-wrapper'),
-	shield = new nvidiaShieldAdb('192.168.1.108'),
+	shield = new nvidiaShieldAdb('192.168.1.108', {
+		interval: 2500,
+		timeout: 2500
+	}),
 
 	// Broadlink MP1 and  RM Plus
 	broadlink = require('broadlinkjs-dw'),
