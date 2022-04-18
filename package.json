@@ -8,7 +8,7 @@
     "broadlinkjs-dw": "^0.1.9",
     "lgtv2": "^1.6.3",
     "nodejs-adb-wrapper": "^1.0.4",
-    "nodejs-ping-wrapper": "^1.0.1"
+    "nodejs-ping-wrapper": "^1.0.4"
   },
   "scripts": {
     "test": "nodemon lgtv.js"

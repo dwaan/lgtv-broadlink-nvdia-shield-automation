@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../nodejs-adb-wrapper"
+		},
+		{
+			"path": "../nodejs-ping-wrapper"
 		}
 	],
 	"settings": {}
