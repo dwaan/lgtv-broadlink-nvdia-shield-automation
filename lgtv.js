@@ -428,6 +428,10 @@ devices.on('mostready', function() {
 
 	// NVIDIA Switch
 
+	this.shield.state().then(({ result, message }) => {
+		this.shield.emit(result ? `awake` : `sleep`);
+	}).catch(_ => { });
+
 	this.shield.on('appChange', currentapp => {
 		if(currentapp == "org.xbmc.kodi") lgtv.toast("Go to sleep 🐒");
 
