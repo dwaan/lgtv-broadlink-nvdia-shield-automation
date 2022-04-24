@@ -12,7 +12,7 @@
 */
 
 'use strict';
-let broadlink = require('broadlinkjs');
+let broadlink = require('broadlinkjs-dw');
 let fs = require('fs');
 let path = require('path');
 
@@ -24,7 +24,7 @@ if (process.argv.length < 3) {
 
 	console.log("Usage:\n", "\tnode rmpro send (command)", "\n");
 	console.log("Available command:")
-	fs.readdir("code/", (err, files) => {
+	fs.readdir("../code/", (err, files) => {
 		files.forEach(file => {
 			if (i > 0) _files += ", ";
 			_files += file.replace(".bin", "");
@@ -44,7 +44,7 @@ if (process.argv.length < 3) {
 			return fs.readFileSync(path.join(__dirname, relPath)); // zzzz....
 		}
 
-		var data = bufferFile("code/" + file + ".bin");
+		var data = bufferFile("../code/" + file + ".bin");
 		data = new Buffer.from(data, 'ascii').toString('hex');
 
 		console.log("Code -> " + data);
@@ -55,7 +55,7 @@ if (process.argv.length < 3) {
 
 		console.log(data);
 
-		fs.writeFile("code/" + _file + ".bin", data, function(err) {
+		fs.writeFile("../code/" + _file + ".bin", data, function(err) {
 			if(err) {
 				return console.log(err);
 			}
@@ -83,7 +83,7 @@ if (process.argv.length < 3) {
 					}, 500);
 
 					dev.on("rawData", (data) => {
-						fs.writeFile("code/" + file + ".bin", data, function(err) {
+						fs.writeFile("../code/" + file + ".bin", data, function(err) {
 							if(err) {
 								return console.log(err);
 							}
@@ -126,7 +126,7 @@ if (process.argv.length < 3) {
 					process.exit();
 				} else {
 					console.log("Sending data ->", file);
-					dev.sendData(bufferFile("code/" + file + ".bin"));
+					dev.sendData(bufferFile("../code/" + file + ".bin"));
 
 					var timer = setInterval(function(){
 						clearInterval(timer);
