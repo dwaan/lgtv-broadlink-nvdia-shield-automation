@@ -33,16 +33,16 @@ let
 	rmpro = false,
 	rmmini3 = false,
 
-	// NVIDIA Shield
+	// Nintendo Switch
 	powerStateWithPing = require('nodejs-ping-wrapper'),
-	nswitch = new powerStateWithPing('192.168.1.106'),
+	nswitch = new powerStateWithPing('192.168.1.106', 22),
 
 	// Wheater Report
 	enableWeatherReport = false,
 
 	// Costume vars
 	currentMediaApp = ""
-;
+	;
 
 let app_stereo = [
 	"com.google.android.apps.mediashell",
@@ -67,7 +67,7 @@ function getDateTime() {
 
 	var min = date.getMinutes();
 	min = (min < 10 ? "0" : "") + min;
-``
+	``
 	var sec = date.getSeconds();
 	sec = (sec < 10 ? "0" : "") + sec;
 
@@ -82,7 +82,7 @@ function getDateTime() {
 	return `${year}-${month}-${day} \x1b[2m${hour}:${min}:${sec}\x1b[0m`;
 }
 
-function ID () {
+function ID() {
 	return `${timestamp ? getDateTime() + " - " : ""}🕹  `;
 }
 
@@ -112,7 +112,7 @@ nswitch.on('awake', () => {
 	if (!rmpro) return;
 
 	// Wake up tv
-	if (lgtv.appId == "") rmpro.sendCode("tvpower");
+	if (lgtv.appId == "") broadlinks.sendCode(["tvpower"]);
 
 	// Switch to Pioneer input
 	delayedRun(nswitch.timer, () => {
@@ -149,7 +149,7 @@ shield.on('playback', currentapp => {
 	// If current media app change, trigger RM Plus event, to change sound mode in receiver
 	currentMediaApp = currentapp;
 
-	if (rmpro) rmpro.emit("changevolume");
+	broadlinks.changeVolume("changevolume");
 
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Active Media App -> 📱 \x1b[4m\x1b[37m${currentMediaApp}\x1b[0m`);
 });
@@ -157,7 +157,7 @@ shield.on('playback', currentapp => {
 shield.on('awake', () => {
 	if (!rmpro) return;
 	// Wake up tv, the reciever should automatically on also
-	if (lgtv.appId == "") rmpro.sendCode("tvpower");
+	if (lgtv.appId == "") broadlinks.sendCode(["tvpower"]);
 
 	// Delayed to make sure everything is on first
 	delayedRun(lgtv.timer, () => {
@@ -210,12 +210,15 @@ broadlinks.on("deviceReady", (dev) => {
 		}
 
 		rmpro = dev;
-		rmpro.sendCode = function () {
-			var argv = arguments,
-				i = 0,
+		rmpro.sendCode = function (args) {
+			var i = 0,
 				loop = setInterval(() => {
-					dev.sendData(bufferFile("code/" + argv[i++] + ".bin"));
-					if (i >= argv.length) clearInterval(loop);
+					try {
+						dev.sendData(bufferFile("code/" + args[i++] + ".bin"));
+						if (i >= args.length) clearInterval(loop);
+					} catch (e) {
+						console.log(e);
+					}
 				}, 500);
 		}
 
@@ -228,7 +231,7 @@ broadlinks.on("deviceReady", (dev) => {
 					// Set reciever mode to extra-stereo
 					if (rmpro.sound_mode != "stereo") {
 						rmpro.sound_mode = "stereo";
-						rmpro.sendCode("soundalc", "soundstereo");
+						rmpro.sendCode(["soundalc", "soundstereo"]);
 						console.log(`${ID()}\x1b[35mBroadlink\x1b[0m: Sound -> 🔈 Stereo`);
 						lgtv.toast("🔊: Stereo");
 					}
@@ -236,7 +239,7 @@ broadlinks.on("deviceReady", (dev) => {
 					// Set reciever mode to auto surround sound for other
 					if (rmpro.sound_mode != "soundauto") {
 						rmpro.sound_mode = "soundauto";
-						rmpro.sendCode("soundalc", "soundauto");
+						rmpro.sendCode(["soundalc", "soundauto"]);
 						console.log(`${ID()}\x1b[35mBroadlink\x1b[0m: Sound -> 🔈 Auto Surround`);
 						lgtv.toast("🔊: Auto Surround");
 					}
@@ -244,7 +247,7 @@ broadlinks.on("deviceReady", (dev) => {
 			}, 1500);
 		});
 
-		console.log(`${ID()}\x1b[35mBroadlink RM Pro+\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
+		console.log(`${ID()}\x1b[35mBroadlink RM Pro\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
 	} else if (dev.type == "MP1" && dev.host.address == "192.168.1.102") {
 		mp1 = dev;
 		mp1.isSleep = true;
@@ -272,6 +275,33 @@ broadlinks.on("deviceReady", (dev) => {
 		console.log(`${ID()}\x1b[33mBroadlink MP1\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
 	}
 });
+broadlink.power = (state = true) => {
+	// Loop until connected
+	let loop = setInterval(() => {
+		if (mp1) {
+			clearInterval(loop);
+			if (state) mp1.emit("receiveron");
+			else mp1.emit("receiveroff");
+		}
+	}, 1000);
+}
+broadlinks.sendCode = (args) => {
+	if (typeof args != 'array') return;
+	// Loop until connected
+	let loop = setInterval(() => {
+		if (rmpro) {
+			clearInterval(loop);
+			rmpro.sendCode(args);
+		}
+	}, 1000);
+}
+broadlinks.changeVolume = () => {
+	if (!rmpro) {
+		console.log(`${ID()}\x1b[33mBroadlink RM Pro\x1b[0m: \x1b[2mNot Connected\x1b[0m`);
+		return;
+	}
+	rmpro.emit("changevolume");
+}
 broadlinks.discover();
 
 // Connect to LG TV
@@ -309,8 +339,7 @@ lgtv.on('connect', () => {
 		// Turn off Receiver and Shield when TV turn to Standby mode
 		if (statuses == "State: Active Standby") {
 			shield.powerOff('KEYCODE_SLEEP');
-			mp1.emit("receiveroff");
-			this.forceEmit = true;
+			broadlink.power(false);
 			if (lgtv != undefined) lgtv.appId = "";
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Status -> 💬 Standby`);
 		}
@@ -337,8 +366,8 @@ lgtv.on('connect', () => {
 		}
 
 		// Set reciever to Switch input
-		if (appId == nswitch.hdmi) rmpro.sendCode("inputswitch");
-		else rmpro.sendCode("inputtv");
+		if (appId == nswitch.hdmi) broadlinks.sendCode(["inputswitch"]);
+		else broadlinks.sendCode(["inputtv"]);
 	});
 
 	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
@@ -352,7 +381,7 @@ lgtv.on('connect', () => {
 			lgtv.appId = res.appId;
 
 			// Turn on reciever
-			mp1.emit("receiveron");
+			broadlink.power();
 
 			// Set audio output to HDMI-ARC
 			lgtv.setAudioToHDMIARC();
@@ -374,7 +403,7 @@ lgtv.on('connect', () => {
 		}
 
 		// Switch reciever sound mode accordingly
-		rmpro.emit("changevolume");
+		broadlinks.changeVolume("changevolume");
 	});
 
 	lgtv.subscribe('ssap://com.webos.service.apiadapter/audio/getSoundOutput', (err, res) => {
@@ -386,7 +415,7 @@ lgtv.on('connect', () => {
 			lgtv.soundOutput = res.soundOutput;
 
 			// Turn on/off receiver
-			if (res.soundOutput == 'external_arc') mp1.emit("receiveron");
+			if (res.soundOutput == 'external_arc') broadlink.power();
 
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Sound Output -> 🔈 ${res.soundOutput}`);
 		}
