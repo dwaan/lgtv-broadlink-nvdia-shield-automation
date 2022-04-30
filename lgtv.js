@@ -104,7 +104,7 @@ nswitch.hdmi = "com.webos.app.hdmi2";
 nswitch.on('connected', () => {
 	console.log(`${ID()}\x1b[33mNintendo Switch\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
 });
-nswitch.connect().catch((error) => {
+nswitch.connect().catch(_ => {
 	console.log("Can't connect");
 });
 // When wake
@@ -149,7 +149,7 @@ shield.on('playback', currentapp => {
 	// If current media app change, trigger RM Plus event, to change sound mode in receiver
 	currentMediaApp = currentapp;
 
-	broadlinks.changeVolume("changevolume");
+	broadlinks.changeAudioType();
 
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Active Media App -> 📱 \x1b[4m\x1b[37m${currentMediaApp}\x1b[0m`);
 });
@@ -223,7 +223,7 @@ broadlinks.on("deviceReady", (dev) => {
 		}
 
 		// Pioner Reciever IR Command
-		rmpro.on("changevolume", () => {
+		rmpro.on("changeaudiotype", () => {
 			delayedRun(rmpro.timer, () => {
 				// Check LG TV and NVIDIA Shield Active app
 				// Set reciever mode based on the stereo list
@@ -295,12 +295,14 @@ broadlinks.sendCode = (args) => {
 		}
 	}, 1000);
 }
-broadlinks.changeVolume = () => {
-	if (!rmpro) {
-		console.log(`${ID()}\x1b[33mBroadlink RM Pro\x1b[0m: \x1b[2mNot Connected\x1b[0m`);
-		return;
-	}
-	rmpro.emit("changevolume");
+broadlinks.changeAudioType = () => {
+	// Loop until connected
+	let loop = setInterval(() => {
+		if (rmpro) {
+			clearInterval(loop);
+			rmpro.emit("changeaudiotype");
+		}
+	}, 1000);
 }
 broadlinks.discover();
 
@@ -309,8 +311,6 @@ lgtv.appId = "";
 lgtv.soundOutput = "";
 // On connect
 lgtv.on('connect', () => {
-	let emitter = new EventEmitter();
-
 	lgtv.toast("Starting 📺 Automation");
 
 	lgtv.subscribe('ssap://com.webos.service.tvpower/power/getPowerState', (err, res) => {
@@ -357,7 +357,7 @@ lgtv.on('connect', () => {
 			}
 		});
 
-		if (appId == shield.hdmi && lgtv.appId != shield.hdmi) return;
+		if (appId == shield.hdmi && lgtv.appId == shield.hdmi) return;
 
 		// Switch to Active input
 		if (appId != "" && appId != lgtv.appId && lgtv.appId.includes("hdmi")) {
@@ -403,7 +403,7 @@ lgtv.on('connect', () => {
 		}
 
 		// Switch reciever sound mode accordingly
-		broadlinks.changeVolume("changevolume");
+		broadlinks.changeAudioType();
 	});
 
 	lgtv.subscribe('ssap://com.webos.service.apiadapter/audio/getSoundOutput', (err, res) => {
