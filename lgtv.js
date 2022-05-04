@@ -156,7 +156,7 @@ shield.on('awake', () => {
 });
 // When shield is  sleep
 shield.on('sleep', () => {
-	if (shield.onPowerOn) return;
+	if (shield.lgtvDoesntEffectPowerState) return;
 
 	// If Shield is sleeping while in input HDMI1 then turn off TV
 	if (lgtv.appId == shield.hdmi) {
@@ -296,8 +296,6 @@ broadlinks.discover();
 // Connect to LG TV
 lgtv.appId = "";
 lgtv.soundOutput = "";
-// States
-lgtv._awake = false;
 // On connect
 lgtv.on('connect', () => {
 	lgtv.toast("Starting 📺 Automation");
@@ -365,21 +363,20 @@ lgtv.on('connect', () => {
 		if (res.appId == "") {
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[2m🛌 Sleep\x1b[0m`);
 			return;
-		} else {
-			// Set current appid
-			lgtv.appId = res.appId;
-
-			// Turn on reciever
-			broadlink.power();
-
-			// Set audio output to HDMI-ARC
-			lgtv.setAudioToHDMIARC();
-
-			shield.onPowerOn = true;
-
-			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[1m🌞 Wake\x1b[0m`);
-			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Current App -> 📺 \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
 		}
+
+		// Set current appid
+		lgtv.appId = res.appId;
+		shield.lgtvDoesntEffectPowerState = true;
+
+		// Turn on reciever
+		broadlink.power();
+
+		// Set audio output to HDMI-ARC
+		lgtv.setAudioToHDMIARC();
+
+		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[1m🌞 Wake\x1b[0m`);
+		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Current App -> 📺 \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
 
 		// Change sound mode in receiver
 		if (lgtv.appId != shield.hdmi) {
@@ -387,7 +384,7 @@ lgtv.on('connect', () => {
 			this.current_media_app = lgtv.appId;
 		} else {
 			shield.powerOn('KEYCODE_WAKEUP').then(() => {
-				shield.onPowerOn = false;
+				shield.lgtvDoesntEffectPowerState = false;
 			});
 		}
 
@@ -445,6 +442,8 @@ lgtv.setAudioToHDMIARC = function () {
 }
 // Turn on and off TV
 lgtv.turnOn = function () {
+	if (lgtv.appId != "") return;
+
 	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning On`);
 
 	if (lgtv.powerInterval) clearInterval(lgtv.powerInterval);
@@ -454,6 +453,8 @@ lgtv.turnOn = function () {
 	}, 1000);
 }
 lgtv.turnOff = function () {
+	if (lgtv.appId == "") return;
+
 	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning Off`);
 
 	if (lgtv.powerInterval) clearInterval(lgtv.powerInterval);
