@@ -109,16 +109,9 @@ nswitch.connect().catch(_ => {
 });
 // When wake
 nswitch.on('awake', () => {
-	if (!rmpro) return;
-
-	// Wake up tv
-	if (lgtv.appId == "") broadlinks.sendCode(["tvpower"]);
-
-	// Switch to Pioneer input
-	delayedRun(nswitch.timer, () => {
-		lgtv.request('ssap://system.launcher/launch', { id: nswitch.hdmi });
-		clearTimeout(nswitch.timeout);
-	}, 1000);
+	// Wake up tv and set HDMI
+	lgtv.turnOn();
+	lgtv.setHDMI(nswitch.hdmi);
 
 	console.log(`${ID()}\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
 });
@@ -155,15 +148,9 @@ shield.on('playback', currentapp => {
 });
 // When shield is awake
 shield.on('awake', () => {
-	if (!rmpro) return;
-	// Wake up tv, the reciever should automatically on also
-	if (lgtv.appId == "") broadlinks.sendCode(["tvpower"]);
-
-	// Delayed to make sure everything is on first
-	delayedRun(lgtv.timer, () => {
-		// Set input to HDMI1
-		lgtv.request('ssap://system.launcher/launch', { id: shield.hdmi });
-	}, 1000);
+	// Wake up tv and set the HDMO
+	lgtv.turnOn();
+	lgtv.setHDMI(shield.hdmi);
 
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
 });
@@ -174,7 +161,7 @@ shield.on('sleep', () => {
 	// If Shield is sleeping while in input HDMI1 then turn off TV
 	if (lgtv.appId == shield.hdmi) {
 		currentMediaApp = "";
-		lgtv.request('ssap://system/turnOff');
+		lgtv.turnOff();
 	}
 
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
@@ -286,7 +273,7 @@ broadlink.power = (state = true) => {
 	}, 1000);
 }
 broadlinks.sendCode = (args) => {
-	if (typeof args != 'array') return;
+	if (typeof args != 'object') return;
 	// Loop until connected
 	let loop = setInterval(() => {
 		if (rmpro) {
@@ -309,6 +296,8 @@ broadlinks.discover();
 // Connect to LG TV
 lgtv.appId = "";
 lgtv.soundOutput = "";
+// States
+lgtv._awake = false;
 // On connect
 lgtv.on('connect', () => {
 	lgtv.toast("Starting 📺 Automation");
@@ -454,7 +443,35 @@ lgtv.setAudioToHDMIARC = function () {
 		});
 	}
 }
+// Turn on and off TV
+lgtv.turnOn = function () {
+	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning On`);
 
+	if (lgtv.powerInterval) clearInterval(lgtv.powerInterval);
+	lgtv.powerInterval = setInterval(() => {
+		if (lgtv.appId == "") broadlinks.sendCode(["tvpower"]);
+		else clearInterval(lgtv.powerInterval);
+	}, 1000);
+}
+lgtv.turnOff = function () {
+	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning Off`);
+
+	if (lgtv.powerInterval) clearInterval(lgtv.powerInterval);
+	lgtv.powerInterval = setInterval(() => {
+		if (lgtv.request) {
+			lgtv.request('ssap://system/turnOff');
+			clearInterval(lgtv.powerInterval);
+		}
+	}, 1000);
+}
+// Set HDMI
+lgtv.setHDMI = function (hdmi) {
+	if (lgtv.hdmiInterval) clearInterval(lgtv.hdmiInterval);
+	lgtv.hdmiInterval = setInterval(() => {
+		if (hdmi == lgtv.appId) clearInterval(lgtv.hdmiInterval);
+		else if (lgtv.request) lgtv.request('ssap://system.launcher/launch', { id: hdmi });
+	}, 1000);
+}
 
 // openweathermap.org API to get current temperature
 function weatherReport() {
