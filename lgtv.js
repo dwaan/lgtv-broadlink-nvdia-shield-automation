@@ -130,7 +130,7 @@ nswitch.on('sleep', () => {
 shield.hdmi = "com.webos.app.hdmi1";
 shield.update().then(() => {
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
-});
+}).catch(e => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Error`, e));
 // App change
 shield.on('appChange', currentapp => {
 	if (currentapp == "org.xbmc.kodi") lgtv.toast("Go to sleep 🐒");
