@@ -5,7 +5,6 @@ const timestamp = true;
 let
 	fs = require('fs'),
 	path = require('path'),
-	EventEmitter = require('events'),
 
 	// Axios
 	axios = require('axios').default,
@@ -94,6 +93,13 @@ function delayedRun(id, callback, timeout) {
 		clearTimeout(id);
 	}, timeout);
 }
+function loopRun(id, callback, timeout) {
+	if (id) clearInterval(id);
+	id = setInterval(() => {
+		callback();
+	}, timeout);
+	return id;
+}
 
 
 console.log(`\n${ID()}\x1b[4mStarting...\x1b[0m`);
@@ -170,26 +176,23 @@ shield.on('sleep', () => {
 // Connect to Broadlink RM Plus, for Reciever IR blaster
 // Connect to Broadlink MP1, for Reciever Power
 broadlinks.on("deviceReady", (dev) => {
-	if (dev.type == "_RMMini_") {
+	let mac = "34:ea:34:f3:e3:75";
+
+	if (dev.type == "RM3") {
 		rmmini3 = dev;
 
 		console.log(`${ID()}\x1b[35mBroadlink RM Mini 3 C\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
 
 		// Listening to IR command in RM Mini 3
-
 		rmmini3.on("rawData", (data) => {
 			console.log(`${ID()}\x1b[35mBroadlink RM Mini 3 C\x1b[0m: \x1b[1m📡 Received\x1b[0m -> ${data.toString("hex")}`);
 			rmmini3.enterLearning();
 		});
 
-		rmmini3.intervalCheck = setInterval(() => {
-			rmmini3.checkData();
-		}, 250);
-		rmmini3.intervalLearning = setInterval(() => {
-			rmmini3.enterLearning();
-		}, 10000);
-
+		rmmini3.intervalCheck = setInterval(() => rmmini3.checkData(), 250);
+		rmmini3.intervalLearning = setInterval(() => rmmini3.enterLearning(), 10000);
 		rmmini3.enterLearning();
+
 		console.log(`${ID()}\x1b[35mBroadlink RM Mini 3 C\x1b[0m: \x1b[1m📡 Listening IR Code\x1b[0m`);
 	} else if (dev.type == "RMPro") {
 		function bufferFile(relPath) {
@@ -206,7 +209,7 @@ broadlinks.on("deviceReady", (dev) => {
 					} catch (e) {
 						console.log(e);
 					}
-				}, 500);
+				}, 250);
 		}
 
 		// Pioner Reciever IR Command
@@ -235,7 +238,7 @@ broadlinks.on("deviceReady", (dev) => {
 		});
 
 		console.log(`${ID()}\x1b[35mBroadlink RM Pro\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
-	} else if (dev.type == "MP1" && dev.host.address == "192.168.1.102") {
+	} else if (dev.type == "MP1" && dev.mac.toString("hex") == mac.replace(/:/g, "")) {
 		mp1 = dev;
 		mp1.isSleep = true;
 
@@ -263,33 +266,31 @@ broadlinks.on("deviceReady", (dev) => {
 	}
 });
 broadlink.power = (state = true) => {
-	// Loop until connected
-	let loop = setInterval(() => {
+	broadlink.powerLoop = loopRun(broadlink.powerLoop, () => {
 		if (mp1) {
-			clearInterval(loop);
+			clearInterval(broadlink.powerLoop);
 			if (state) mp1.emit("receiveron");
 			else mp1.emit("receiveroff");
 		}
-	}, 1000);
+	}, 500);
 }
 broadlinks.sendCode = (args) => {
 	if (typeof args != 'object') return;
-	// Loop until connected
-	let loop = setInterval(() => {
+
+	broadlink.sendCodeLoop = loopRun(broadlink.sendCodeLoop, () => {
 		if (rmpro) {
-			clearInterval(loop);
+			clearInterval(broadlink.sendCodeLoop);
 			rmpro.sendCode(args);
 		}
-	}, 1000);
+	}, 500);
 }
 broadlinks.changeAudioType = () => {
-	// Loop until connected
-	let loop = setInterval(() => {
+	broadlink.changeAudioLoop = loopRun(broadlink.changeAudioLoop, () => {
 		if (rmpro) {
-			clearInterval(loop);
+			clearInterval(broadlink.changeAudioLoop);
 			rmpro.emit("changeaudiotype");
 		}
-	}, 1000);
+	}, 500);
 }
 broadlinks.discover();
 
@@ -298,8 +299,6 @@ lgtv.appId = "";
 lgtv.soundOutput = "";
 // On connect
 lgtv.on('connect', () => {
-	lgtv.toast("Starting 📺 Automation");
-
 	lgtv.subscribe('ssap://com.webos.service.tvpower/power/getPowerState', (err, res) => {
 		if (!res || err || res.errorCode) {
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> 🚫 Error while getting power status | ${err} | ${res}`);
@@ -324,11 +323,11 @@ lgtv.on('connect', () => {
 		}
 
 		// Turn off Receiver and Shield when TV turn to Standby mode
-		if (statuses == "State: Active Standby") {
+		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Status ->`, statuses);
+		if (statuses == "State: Suspend") {
 			shield.powerOff('KEYCODE_SLEEP');
 			broadlink.power(false);
 			if (lgtv != undefined) lgtv.appId = "";
-			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Status -> 💬 Standby`);
 		}
 	});
 
@@ -373,7 +372,7 @@ lgtv.on('connect', () => {
 		broadlink.power();
 
 		// Set audio output to HDMI-ARC
-		lgtv.setAudioToHDMIARC();
+		lgtv.turnOnARC();
 
 		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[1m🌞 Wake\x1b[0m`);
 		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Current App -> 📺 \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
@@ -417,7 +416,7 @@ lgtv.on('close', () => {
 	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Status -> 🚪 Close`);
 });
 lgtv.on('error', (err) => {
-	if (err) console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> 🚫 No Response`);
+	if (err) console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[2m🚫 No Response\x1b[0m`);
 });
 lgtv.toast = (message) => {
 	try {
@@ -426,8 +425,31 @@ lgtv.toast = (message) => {
 		console.log(`${ID()}\x1b[4m${message}\x1b[0m`)
 	}
 }
+// Turn on and off TV
+lgtv.turnOn = function () {
+	if (lgtv.appId != "") return;
+
+	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning On`);
+
+	lgtv.powerInterval = loopRun(lgtv.powerInterval, () => {
+		if (lgtv.appId == "") broadlinks.sendCode(["tvpower"]);
+		else clearInterval(lgtv.powerInterval);
+	}, 500);
+}
+lgtv.turnOff = function () {
+	if (lgtv.appId == "") return;
+
+	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning Off`);
+
+	lgtv.powerInterval = loopRun(lgtv.powerInterval, () => {
+		if (lgtv.request) {
+			lgtv.request('ssap://system/turnOff');
+			clearInterval(lgtv.powerInterval);
+		}
+	}, 1000);
+}
 // Set audio output to HDMI-ARC
-lgtv.setAudioToHDMIARC = function () {
+lgtv.turnOnARC = function () {
 	if (lgtv.appId == "") return;
 
 	if (lgtv.soundOutput != 'external_arc') {
@@ -440,38 +462,12 @@ lgtv.setAudioToHDMIARC = function () {
 		});
 	}
 }
-// Turn on and off TV
-lgtv.turnOn = function () {
-	if (lgtv.appId != "") return;
-
-	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning On`);
-
-	if (lgtv.powerInterval) clearInterval(lgtv.powerInterval);
-	lgtv.powerInterval = setInterval(() => {
-		if (lgtv.appId == "") broadlinks.sendCode(["tvpower"]);
-		else clearInterval(lgtv.powerInterval);
-	}, 1000);
-}
-lgtv.turnOff = function () {
-	if (lgtv.appId == "") return;
-
-	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning Off`);
-
-	if (lgtv.powerInterval) clearInterval(lgtv.powerInterval);
-	lgtv.powerInterval = setInterval(() => {
-		if (lgtv.request) {
-			lgtv.request('ssap://system/turnOff');
-			clearInterval(lgtv.powerInterval);
-		}
-	}, 1000);
-}
 // Set HDMI
 lgtv.setHDMI = function (hdmi) {
-	if (lgtv.hdmiInterval) clearInterval(lgtv.hdmiInterval);
-	lgtv.hdmiInterval = setInterval(() => {
+	lgtv.hdmiInterval = loopRun(lgtv.hdmiInterval, () => {
 		if (hdmi == lgtv.appId) clearInterval(lgtv.hdmiInterval);
 		else if (lgtv.request) lgtv.request('ssap://system.launcher/launch', { id: hdmi });
-	}, 1000);
+	}, 500);
 }
 
 // openweathermap.org API to get current temperature

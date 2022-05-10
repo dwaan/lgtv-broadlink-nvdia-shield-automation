@@ -1,11 +1,9 @@
 'use strict';
-let broadlink = require('broadlinkjs');
-let fs = require('fs');
+
+let broadlink = require('broadlinkjs-dw');
 
 var b = new broadlink();
-
 b.discover();
-
 b.on("deviceReady", (dev) => {
 	if (dev.type == "MP1") {
 		var status = [];
@@ -25,9 +23,9 @@ b.on("deviceReady", (dev) => {
 			console.log(status_array);
 		});
 
-		setTimeout(function() {
+		setTimeout(function () {
 			// Array index + 1
-			dev.set_power(4,0);
+			dev.set_power(4, 0);
 			console.log("");
 		}, 1000);
 	} else {
