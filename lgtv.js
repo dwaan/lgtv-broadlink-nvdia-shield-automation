@@ -347,8 +347,8 @@ lgtv.on('connect', () => {
 
 		// Switch to Active input
 		if (appId != "" && appId != lgtv.appId && lgtv.appId.includes("hdmi")) {
-			lgtv.request('ssap://system.launcher/launch', { id: appId });
-			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Input -> 📺 ${appId}`);
+			// lgtv.request('ssap://system.launcher/launch', { id: appId });
+			// console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Input -> 📺 ${appId}`);
 		}
 
 		// Set reciever to Switch input
@@ -362,6 +362,8 @@ lgtv.on('connect', () => {
 		if (res.appId == "") {
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[2m🛌 Sleep\x1b[0m`);
 			return;
+		} else if (lgtv.appId == "") {
+			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[1m🌞 Wake\x1b[0m`);
 		}
 
 		// Set current appid
@@ -374,7 +376,6 @@ lgtv.on('connect', () => {
 		// Set audio output to HDMI-ARC
 		lgtv.turnOnARC();
 
-		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> \x1b[1m🌞 Wake\x1b[0m`);
 		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Current App -> 📺 \x1b[4m\x1b[37m${res.appId}\x1b[0m`);
 
 		// Change sound mode in receiver
