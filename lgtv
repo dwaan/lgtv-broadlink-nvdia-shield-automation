@@ -219,7 +219,8 @@ broadlinks.on("deviceReady", (dev) => {
 						dev.sendData(bufferFile("code/" + args[i++] + ".bin"));
 						if (i >= args.length) clearInterval(loop);
 					} catch (e) {
-						console.log(e);
+						clearInterval(loop);
+						console.log(`${ID()}\x1b[35mBroadlink\x1b[0m: ❓ Error sending IR Code -> \x1b[4m\x1b[37m${args.toString()}\x1b[0m`);
 					}
 				}, 250);
 		}

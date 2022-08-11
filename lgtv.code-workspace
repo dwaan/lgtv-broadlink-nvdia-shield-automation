@@ -15,6 +15,9 @@
 		{
 			"name": "nodejs-ping-wrapper",
 			"path": "../nodejs-ping-wrapper"
+		},
+		{
+			"path": "node_modules/nodejs-adb-wrapper"
 		}
 	],
 	"settings": {}
