@@ -1,23 +1,24 @@
 {
 	"folders": [
 		{
-			"name": "SSH FS - themessier",
+			"name": "themessier - lgtv",
 			"uri": "ssh://themessier/storage/homebridge/lgtv"
+		},
+		{
+			"name": "themessier - adb",
+			"uri": "ssh://themessier/storage/homebridge/lgtv/node_modules/nodejs-adb-wrapper"
 		},
 		{
 			"name": "lgtv",
 			"path": "."
 		},
 		{
-			"name": "nodejs-adb-wrapper",
+			"name": "adb",
 			"path": "../nodejs-adb-wrapper"
 		},
 		{
-			"name": "nodejs-ping-wrapper",
+			"name": "ping",
 			"path": "../nodejs-ping-wrapper"
-		},
-		{
-			"path": "node_modules/nodejs-adb-wrapper"
 		}
 	],
 	"settings": {}
