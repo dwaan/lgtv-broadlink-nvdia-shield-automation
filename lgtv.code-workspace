@@ -19,6 +19,14 @@
 		{
 			"name": "ping",
 			"path": "../nodejs-ping-wrapper"
+		},
+		{
+			"name": "broadlink",
+			"path": "../broadlinkjs/"
+		},
+		{
+			"name": "~ broadlink",
+			"path": "./node_modules/broadlinkjs-dw/"
 		}
 	],
 	"settings": {}

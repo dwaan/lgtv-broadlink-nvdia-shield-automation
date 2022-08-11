@@ -5,7 +5,7 @@
   "main": "lgtv.js",
   "dependencies": {
     "axios": "^0.26.1",
-    "broadlinkjs-dw": "^0.1.9",
+    "broadlinkjs-dw": "^0.1.13",
     "lgtv2": "^1.6.3",
     "nodejs-adb-wrapper": "^1.1.6",
     "nodejs-ping-wrapper": "^1.1.0"
