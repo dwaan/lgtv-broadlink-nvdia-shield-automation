@@ -136,9 +136,7 @@ nswitch.on('sleep', () => {
 
 // Connect to NVIDIA Shield
 shield.hdmi = "com.webos.app.hdmi1";
-shield.update().then(() => {
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
-}).catch(e => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Error`, e));
+shield.update().catch(e => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Error`, e));
 // App change
 shield.on('appChange', currentapp => {
 	if (currentapp == "org.xbmc.kodi") lgtv.toast("Go to sleep 🐒");
@@ -162,7 +160,7 @@ shield.on('awake', () => {
 
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
 });
-// When shield is  sleep
+// When shield is sleep
 shield.on('sleep', () => {
 	if (shield.lgtvDoesntEffectPowerState) return;
 
@@ -173,6 +171,18 @@ shield.on('sleep', () => {
 	}
 
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
+});
+// When shield is Unauthorized
+shield.on('unauthorized', () => {
+	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Unauthorized\x1b[0m`);
+});
+// When shield is Connected
+shield.on('connected', () => {
+	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
+});
+// When shield is Disconnected
+shield.on('disconnected', () => {
+	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Disconnected\x1b[0m`);
 });
 
 // Connect to Broadlink RM Plus, for Reciever IR blaster
@@ -382,12 +392,16 @@ lgtv.on('connect', () => {
 
 		// Change sound mode in receiver
 		if (lgtv.appId != shield.hdmi) {
-			shield.powerOff('KEYCODE_SLEEP')
+			shield.powerOff('KEYCODE_SLEEP').catch(_ => {
+				console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power Off -> \x1b[2mFailed\x1b[0m`);
+			});
 			this.current_media_app = lgtv.appId;
 		} else {
 			shield.powerOn('KEYCODE_WAKEUP').then(() => {
 				shield.lgtvDoesntEffectPowerState = false;
-			});
+			}).catch(_ => {
+				console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power On -> \x1b[2mFailed\x1b[0m`);
+			});;
 		}
 
 		// Switch reciever sound mode accordingly

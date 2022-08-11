@@ -7,15 +7,15 @@
     "axios": "^0.26.1",
     "broadlinkjs-dw": "^0.1.9",
     "lgtv2": "^1.6.3",
-    "nodejs-adb-wrapper": "^1.1.0",
+    "nodejs-adb-wrapper": "^1.1.4",
     "nodejs-ping-wrapper": "^1.1.0"
   },
   "scripts": {
-    "test": "nodemon lgtv.js"
+    "test": "nodemon lgtv"
   },
   "author": "Dwan",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.19"
   }
 }
