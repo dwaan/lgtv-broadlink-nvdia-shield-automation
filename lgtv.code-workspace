@@ -1,11 +1,11 @@
 {
 	"folders": [
 		{
-			"name": "themessier - lgtv",
+			"name": "[themessier - lgtv]",
 			"uri": "ssh://themessier/storage/homebridge/lgtv"
 		},
 		{
-			"name": "themessier - adb",
+			"name": "[themessier - adb]",
 			"uri": "ssh://themessier/storage/homebridge/lgtv/node_modules/nodejs-adb-wrapper"
 		},
 		{
@@ -25,7 +25,7 @@
 			"path": "../broadlinkjs/"
 		},
 		{
-			"name": "~ broadlink",
+			"name": "[broadlink]",
 			"path": "./node_modules/broadlinkjs-dw/"
 		}
 	],
