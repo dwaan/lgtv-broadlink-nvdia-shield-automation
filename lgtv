@@ -136,7 +136,9 @@ nswitch.on('sleep', () => {
 
 // Connect to NVIDIA Shield
 shield.hdmi = "com.webos.app.hdmi1";
-shield.update().catch(e => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Error`, e));
+shield.update().then(output => {
+	if (!output.result) console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Error`, output.message)
+});
 // App change
 shield.on('appChange', currentapp => {
 	if (currentapp == "org.xbmc.kodi") lgtv.toast("Go to sleep 🐒");
@@ -365,8 +367,8 @@ lgtv.on('connect', () => {
 		}
 
 		// Set reciever to Switch input
-		if (appId == nswitch.hdmi) broadlinks.sendCode(["inputswitch"]);
-		else broadlinks.sendCode(["inputtv"]);
+		// if (appId == nswitch.hdmi) broadlinks.sendCode(["inputswitch"]);
+		// else broadlinks.sendCode(["inputtv"]);
 	});
 
 	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
@@ -393,16 +395,15 @@ lgtv.on('connect', () => {
 
 		// Change sound mode in receiver
 		if (lgtv.appId != shield.hdmi) {
-			shield.powerOff('KEYCODE_SLEEP').catch(_ => {
-				console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power Off -> \x1b[2mFailed\x1b[0m`);
+			shield.powerOff('KEYCODE_SLEEP').then(output => {
+				if (!output.result) console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power Off -> \x1b[2mFailed\x1b[0m`);
 			});
 			this.current_media_app = lgtv.appId;
 		} else {
-			shield.powerOn('KEYCODE_WAKEUP').then(() => {
-				shield.lgtvDoesntEffectPowerState = false;
-			}).catch(_ => {
-				console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power On -> \x1b[2mFailed\x1b[0m`);
-			});;
+			shield.powerOn('KEYCODE_WAKEUP').then(output => {
+				if (output.result) shield.lgtvDoesntEffectPowerState = false;
+				else console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power On -> \x1b[2mFailed\x1b[0m`);
+			});
 		}
 
 		// Switch reciever sound mode accordingly
