@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /*
 	usage:
 
@@ -24,7 +26,7 @@ function bufferFile(relPath) {
 }
 
 var ircodes = [];
-fs.readdir("../code/", (err, files) => {
+fs.readdir("../code/", (_, files) => {
 	var i = 0;
 	files.forEach(file => {
 		if (!file.includes(".bin")) return;
@@ -107,7 +109,7 @@ fs.readdir("../code/", (err, files) => {
 								fileData = new Buffer.from(fileData, 'ascii').toString('hex');
 
 								console.log(`${file} ${data - fileData}`);
-								if(data == fileData) console.log(`File: ${file}`);
+								if (data == fileData) console.log(`File: ${file}`);
 							})
 							dev.enterLearning();
 						});

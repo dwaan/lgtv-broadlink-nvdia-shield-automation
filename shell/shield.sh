@@ -1,3 +1,5 @@
+#!/usr/bin/sh
+
 adb connect 192.168.1.106 > /dev/null
 
 if [ ! -d ~/.homebridgestates ]

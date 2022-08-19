@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const axios = require('axios').default;
 
 let apiKey = '40dc2517a33b8ddb7aac60c64a7b3f80';
