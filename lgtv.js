@@ -167,10 +167,7 @@ shield.on('sleep', () => {
 	if (shield.lgtvDoesntEffectPowerState) return;
 
 	// If Shield is sleeping while in input HDMI1 then turn off TV
-	if (lgtv.appId == shield.hdmi) {
-		currentMediaApp = "";
-		lgtv.turnOff();
-	}
+	if (lgtv.appId == shield.hdmi) lgtv.turnOff();
 
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
 });
@@ -274,7 +271,7 @@ broadlinks.on("deviceReady", (dev) => {
 					console.log(`${ID()}\x1b[33mBroadlink MP\x1b[0m: Pioneer Receiver -> 🔌 \x1b[2mOFF\x1b[0m`);
 				}
 				mp1.isSleep = true;
-			}, 5000);
+			}, 10000);
 		});
 
 		console.log(`${ID()}\x1b[33mBroadlink MP1\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
@@ -338,8 +335,8 @@ lgtv.on('connect', () => {
 		}
 
 		// Turn off Receiver and Shield when TV turn to Standby mode
-		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Status ->`, statuses);
 		if (statuses == "State: Suspend") {
+			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Status ->`, statuses);
 			shield.powerOff('KEYCODE_SLEEP');
 			broadlink.power(false);
 			if (lgtv != undefined) lgtv.appId = "";
@@ -353,9 +350,8 @@ lgtv.on('connect', () => {
 
 		// Read active input
 		res.devices.forEach(element => {
-			if (element.connected && element.subCount > 0) {
-				appId = element.appId;
-			}
+			if (element.connected && element.subCount > 0) appId = element.appId;
+			// console.log(element.label, element.subCount, element.connected);
 		});
 
 		if (appId == shield.hdmi && lgtv.appId == shield.hdmi) return;
@@ -363,7 +359,7 @@ lgtv.on('connect', () => {
 		// Switch to Active input
 		if (appId != "" && appId != lgtv.appId && lgtv.appId.includes("hdmi")) {
 			// lgtv.request('ssap://system.launcher/launch', { id: appId });
-			// console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Input -> 📺 ${appId}`);
+			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Input -> 📺 ${appId}`);
 		}
 
 		// Set reciever to Switch input
@@ -460,12 +456,14 @@ lgtv.turnOff = function () {
 
 	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning Off`);
 
+	// Give 15 seconds grace, useful when Shield is switching VPN server
 	lgtv.powerInterval = loopRun(lgtv.powerInterval, () => {
 		if (lgtv.request) {
 			lgtv.request('ssap://system/turnOff');
 			clearInterval(lgtv.powerInterval);
+			currentMediaApp = "";
 		}
-	}, 1000);
+	}, currentMediaApp == "com.simplexsolutionsinc.vpn_unlimited" ? 15000 : 5000);
 }
 // Set audio output to HDMI-ARC
 lgtv.turnOnARC = function () {
