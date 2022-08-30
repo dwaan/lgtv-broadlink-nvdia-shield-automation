@@ -37,6 +37,7 @@ let
 	// Nintendo Switch
 	powerStateWithPing = require('nodejs-ping-wrapper'),
 	nswitch = new powerStateWithPing('192.168.1.106', 22),
+	rayBook = new powerStateWithPing('192.168.1.121', 5),
 
 	// Wheater Report
 	enableWeatherReport = false,
@@ -134,6 +135,38 @@ nswitch.on('sleep', () => {
 	console.log(`${ID()}\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
 });
 
+
+
+// Connect to RayBook
+rayBook.hdmi = "com.webos.app.hdmi1";
+rayBook.on('connected', () => {
+	console.log(`${ID()}\x1b[33mRayBook\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
+});
+rayBook.connect().catch(_ => {
+	console.log("Can't connect");
+});
+// When wake
+rayBook.on('awake', () => {
+	// Wake up tv and set HDMI
+	lgtv.turnOn();
+	lgtv.setHDMI(rayBook.hdmi);
+	broadlinks.sendCode(["hdmi1"]);
+
+	console.log(`${ID()}\x1b[33mRayBook\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
+});
+// When sleep
+rayBook.on('sleep', () => {
+	// If Switch is sleeping while in input HDMI2 then turn on NVIDIA Shield
+	if (lgtv.appId == rayBook.hdmi) {
+		currentMediaApp = "";
+		lgtv.request('ssap://system.launcher/launch', { id: shield.hdmi });
+	}
+
+	console.log(`${ID()}\x1b[33mRayBook\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
+});
+
+
+
 // Connect to NVIDIA Shield
 shield.hdmi = "com.webos.app.hdmi1";
 shield.update().then(output => {
@@ -159,6 +192,7 @@ shield.on('awake', () => {
 	// Wake up tv and set the HDMO
 	lgtv.turnOn();
 	lgtv.setHDMI(shield.hdmi);
+	broadlinks.sendCode(["hdmi2"]);
 
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
 });
