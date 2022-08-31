@@ -36,8 +36,8 @@ let
 
 	// Nintendo Switch
 	powerStateWithPing = require('nodejs-ping-wrapper'),
-	nswitch = new powerStateWithPing('192.168.1.106', 22),
-	rayBook = new powerStateWithPing('192.168.1.121', 5),
+	nswitch = new powerStateWithPing('192.168.1.106', 24),
+	rayBook = new powerStateWithPing('192.168.1.121', 40),
 
 	// Wheater Report
 	enableWeatherReport = false,
@@ -85,7 +85,7 @@ function getDateTime() {
 }
 
 function ID() {
-	return `${timestamp ? getDateTime() + " - " : ""}🕹  `;
+	return `${timestamp ? getDateTime() + " " : ""}🕹  `;
 }
 
 
@@ -110,16 +110,14 @@ console.log(`\n${ID()}\x1b[4mStarting...\x1b[0m`);
 
 // Connect to Nintendo Switch
 nswitch.hdmi = "com.webos.app.hdmi2";
-nswitch.on('connected', () => {
-	console.log(`${ID()}\x1b[33mNintendo Switch\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
-});
+nswitch.on('connected', () => console.log(`${ID()}\x1b[33mNintendo Switch\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`));
 nswitch.connect().catch(_ => {
 	console.log("Can't connect");
 });
 // When wake
 nswitch.on('awake', () => {
 	// Wake up tv and set HDMI
-	lgtv.turnOn();
+	lgtv.turnOn("Nintendo Switch is on");
 	lgtv.setHDMI(nswitch.hdmi);
 
 	console.log(`${ID()}\x1b[33mNintendo Switch\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
@@ -139,30 +137,23 @@ nswitch.on('sleep', () => {
 
 // Connect to RayBook
 rayBook.hdmi = "com.webos.app.hdmi1";
-rayBook.on('connected', () => {
-	console.log(`${ID()}\x1b[33mRayBook\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
-});
-rayBook.connect().catch(_ => {
-	console.log("Can't connect");
-});
+rayBook.on('connected', () => console.log(`${ID()}\x1b[33mRayBook\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`));
+rayBook.connect().catch(() => console.log("Can't connect"));
 // When wake
 rayBook.on('awake', () => {
+	console.log(`${ID()}\x1b[33mRayBook\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
+
 	// Wake up tv and set HDMI
-	lgtv.turnOn();
+	lgtv.turnOn(`RayBook is on`);
 	lgtv.setHDMI(rayBook.hdmi);
 	broadlinks.sendCode(["hdmi1"]);
-
-	console.log(`${ID()}\x1b[33mRayBook\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
+	shield.turnOff(`RayBook is awake`);
 });
 // When sleep
 rayBook.on('sleep', () => {
-	// If Switch is sleeping while in input HDMI2 then turn on NVIDIA Shield
-	if (lgtv.appId == rayBook.hdmi) {
-		currentMediaApp = "";
-		lgtv.request('ssap://system.launcher/launch', { id: shield.hdmi });
-	}
-
 	console.log(`${ID()}\x1b[33mRayBook\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
+
+	if (lgtv.hdmi == shield.hdmi) shield.turnOn('RayBook is sleep');
 });
 
 
@@ -189,34 +180,42 @@ shield.on('playback', currentapp => {
 });
 // When shield is awake
 shield.on('awake', () => {
+	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
+
 	// Wake up tv and set the HDMO
-	lgtv.turnOn();
+	lgtv.turnOn(`NVIDIA Shield is on`);
 	lgtv.setHDMI(shield.hdmi);
 	broadlinks.sendCode(["hdmi2"]);
-
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
 });
 // When shield is sleep
 shield.on('sleep', () => {
 	if (shield.lgtvDoesntEffectPowerState) return;
 
-	// If Shield is sleeping while in input HDMI1 then turn off TV
-	if (lgtv.appId == shield.hdmi) lgtv.turnOff();
-
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
+
+	// If Shield is sleeping while in input HDMI1 then turn off TV
+	if (lgtv.appId == shield.hdmi && rayBook.isSleep) lgtv.turnOff();
 });
 // When shield is Unauthorized
-shield.on('unauthorized', () => {
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Unauthorized\x1b[0m`);
-});
+shield.on('unauthorized', () => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Unauthorized\x1b[0m`));
 // When shield is Connected
-shield.on('connected', () => {
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`);
-});
+shield.on('connected', () => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`));
 // When shield is Disconnected
-shield.on('disconnected', () => {
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Disconnected\x1b[0m`);
-});
+shield.on('disconnected', () => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Disconnected\x1b[0m`));
+// Custom sleep and wakeup
+shield.turnOff = async function (reason = "") {
+	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: ⚪️ Power Off -> ${reason}`);
+
+	let output = await this.powerOff('KEYCODE_SLEEP')
+	if (!output.result) console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power Off -> \x1b[2mFailed\x1b[0m`);
+}
+shield.turnOn = async function (reason = "") {
+	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: 🟢 Power On -> ${reason}`);
+
+	let output = await this.powerOn('KEYCODE_WAKEUP');
+	if (output.result) shield.lgtvDoesntEffectPowerState = false;
+	else console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power On -> \x1b[2mFailed\x1b[0m`);
+}
 
 // Connect to Broadlink RM Plus, for Reciever IR blaster
 // Connect to Broadlink MP1, for Reciever Power
@@ -345,6 +344,23 @@ lgtv.appId = "";
 lgtv.soundOutput = "";
 // On connect
 lgtv.on('connect', () => {
+	lgtv.getSocket(
+		'ssap://com.webos.service.networkinput/getPointerInputSocket',
+		function (err, sock) {
+			if (!err) {
+				sock.send('button', {
+					name: 'UP'
+				});
+				// sock.send('click');
+				// sock.send('move', {
+				// 	dx: 100,
+				// 	dy: 100,
+				// 	down: 0
+				// });
+			}
+		}
+	);
+
 	lgtv.subscribe('ssap://com.webos.service.tvpower/power/getPowerState', (err, res) => {
 		if (!res || err || res.errorCode) {
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> 🚫 Error while getting power status | ${err} | ${res}`);
@@ -371,7 +387,7 @@ lgtv.on('connect', () => {
 		// Turn off Receiver and Shield when TV turn to Standby mode
 		if (statuses == "State: Suspend") {
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Status ->`, statuses);
-			shield.powerOff('KEYCODE_SLEEP');
+			shield.turnOff(`TV is Off`);
 			broadlink.power(false);
 			if (lgtv != undefined) lgtv.appId = "";
 		}
@@ -425,15 +441,10 @@ lgtv.on('connect', () => {
 
 		// Change sound mode in receiver
 		if (lgtv.appId != shield.hdmi) {
-			shield.powerOff('KEYCODE_SLEEP').then(output => {
-				if (!output.result) console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power Off -> \x1b[2mFailed\x1b[0m`);
-			});
+			shield.turnOff(`TV input is not NVIDIA Shield`);
 			this.current_media_app = lgtv.appId;
 		} else {
-			shield.powerOn('KEYCODE_WAKEUP').then(output => {
-				if (output.result) shield.lgtvDoesntEffectPowerState = false;
-				else console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Power On -> \x1b[2mFailed\x1b[0m`);
-			});
+			shield.turnOn(`TV input is NVIDIA Shield`);
 		}
 
 		// Switch reciever sound mode accordingly
@@ -469,16 +480,36 @@ lgtv.on('error', (err) => {
 });
 lgtv.toast = (message) => {
 	try {
-		lgtv.request('ssap://com.webos.service.apiadapter/system_notifications/createToast', { message: message });
+		// lgtv.request('ssap://com.webos.service.apiadapter/system_notifications/createToast', { message: message });
+		lgtv.request("ssap://com.webos.service.apiadapter/system_notifications/createToast", {
+			message: message,
+			onSuccess: function (args) {
+				console.log("success", args);
+			},
+			onFailure: function (args) {
+				console.log("fail", args);
+			}
+		});
+		// lgtv.request('ssap://com.webos.service.apiadapter/system_notifications/createAlert', {
+		// 	message: "RayBook is off, what to do you want to do?",
+		// 	"buttons": [
+		// 		{
+		// 			"label": "NVIDIA Shield"
+		// 		}, {
+		// 			"label": "Turn off TV"
+		// 		}
+		// 	]
+		// });
 	} catch (error) {
-		console.log(`${ID()}\x1b[4m${message}\x1b[0m`)
+		console.log(error);
+		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: ❓ Error sending message -> \x1b[4m\x1b[37m${message}\x1b[0m`);
 	}
 }
 // Turn on and off TV
-lgtv.turnOn = function () {
+lgtv.turnOn = function (reason = "") {
 	if (lgtv.appId != "") return;
 
-	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning On`);
+	console.log(`${ID()}\x1b[36mLG TV\x1b[0m: Turning On -> ${reason}`);
 
 	lgtv.powerInterval = loopRun(lgtv.powerInterval, () => {
 		if (lgtv.appId == "") broadlinks.sendCode(["tvpower"]);
