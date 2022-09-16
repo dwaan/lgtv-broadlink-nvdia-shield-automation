@@ -11,7 +11,8 @@
     "nodejs-ping-wrapper": "^1.1.0"
   },
   "scripts": {
-    "test": "nodemon lgtv.js"
+    "test": "nodemon lgtv.js",
+    "lgtest": "nodemon lgtest.js"
   },
   "author": "Dwan",
   "license": "ISC",
