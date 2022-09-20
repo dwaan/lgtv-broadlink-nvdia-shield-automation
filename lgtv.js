@@ -163,45 +163,75 @@ shield.hdmi = "com.webos.app.hdmi1";
 shield.update().then(output => {
 	if (!output.result) console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Error`, output.message)
 });
-// App change
-shield.on('appChange', currentapp => {
-	if (currentapp == "org.xbmc.kodi") lgtv.toast("Go to sleep 🐒");
+// On update
+shield.on(`update`, (type, message, debug) => {
+	switch (type) {
+		// Connection events
+		case `connecting`:
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[1m🔌 Connecting...\x1b[0m`)
+			break;
+		case `timeout`:
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 timeout\x1b[0m`)
+			break;
+		case `status`:
+			break;
+		case `connected`:
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`)
+			break;
+		case `disconnected`:
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Disconnected\x1b[0m`)
+			break;
+		case `authorized`:
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🔌 Authorized\x1b[0m`)
+			break;
+		case `unauthorized`:
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Unauthorized\x1b[0m`)
+			break;
 
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Active App -> 📱 \x1b[4m\x1b[37m${currentapp}\x1b[0m`);
+		// App events
+		case `appChange`:
+			if (message == "org.xbmc.kodi") lgtv.toast("Go to sleep 🐒");
+
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Active App -> 📱 \x1b[4m\x1b[37m${message}\x1b[0m`);
+			break;
+		case `playback`:
+			// If current media app change, trigger RM Plus event, to change sound mode in receiver
+			currentMediaApp = message.appId;
+
+			broadlinks.changeAudioType();
+
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Active Media App -> 📱 \x1b[4m\x1b[37m${currentMediaApp}\x1b[0m`);
+			break;
+
+		// Sleep/awake events
+		case `awake`:
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
+
+			// Wake up tv and set the HDMI
+			lgtv.turnOn(`NVIDIA Shield is on`);
+			lgtv.setHDMI(shield.hdmi);
+			broadlinks.sendCode(["hdmi2"]);
+			break;
+		case `sleep`:
+			if (shield.lgtvDoesntEffectPowerState) return;
+
+			console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
+
+			// If Shield is sleeping while in input HDMI1 then turn off TV
+			// if (lgtv.appId == shield.hdmi && rayBook.isSleep) lgtv.turnOff();
+			break;
+
+		// Power events
+		case `powerOn`:
+		case `powerOff`:
+		case `debugPowerOn`:
+		case `debugPowerOff`:
+		case `powerOnStatus`:
+		case `powerOffStatus`:
+		default:
+			break;
+	}
 });
-// Playback change
-shield.on('playback', currentapp => {
-	// If current media app change, trigger RM Plus event, to change sound mode in receiver
-	currentMediaApp = currentapp;
-
-	broadlinks.changeAudioType();
-
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Active Media App -> 📱 \x1b[4m\x1b[37m${currentMediaApp}\x1b[0m`);
-});
-// When shield is awake
-shield.on('awake', () => {
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[1m🌞 Wake\x1b[0m`);
-
-	// Wake up tv and set the HDMO
-	lgtv.turnOn(`NVIDIA Shield is on`);
-	lgtv.setHDMI(shield.hdmi);
-	broadlinks.sendCode(["hdmi2"]);
-});
-// When shield is sleep
-shield.on('sleep', () => {
-	if (shield.lgtvDoesntEffectPowerState) return;
-
-	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: Status -> \x1b[2m🛌 Sleep\x1b[0m`);
-
-	// If Shield is sleeping while in input HDMI1 then turn off TV
-	if (lgtv.appId == shield.hdmi && rayBook.isSleep) lgtv.turnOff();
-});
-// When shield is Unauthorized
-shield.on('unauthorized', () => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Unauthorized\x1b[0m`));
-// When shield is Connected
-shield.on('connected', () => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[1m🔌 Connected\x1b[0m`));
-// When shield is Disconnected
-shield.on('disconnected', () => console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: \x1b[2m🚫 Disconnected\x1b[0m`));
 // Custom sleep and wakeup
 shield.turnOff = async function (reason = "") {
 	console.log(`${ID()}\x1b[32mNvidia Shield\x1b[0m: ⚪️ Power Off -> ${reason}`);
@@ -344,23 +374,6 @@ lgtv.appId = "";
 lgtv.soundOutput = "";
 // On connect
 lgtv.on('connect', () => {
-	lgtv.getSocket(
-		'ssap://com.webos.service.networkinput/getPointerInputSocket',
-		function (err, sock) {
-			if (!err) {
-				sock.send('button', {
-					name: 'UP'
-				});
-				// sock.send('click');
-				// sock.send('move', {
-				// 	dx: 100,
-				// 	dy: 100,
-				// 	down: 0
-				// });
-			}
-		}
-	);
-
 	lgtv.subscribe('ssap://com.webos.service.tvpower/power/getPowerState', (err, res) => {
 		if (!res || err || res.errorCode) {
 			console.log(`${ID()}\x1b[36mLG TV\x1b[0m: TV -> 🚫 Error while getting power status | ${err} | ${res}`);
@@ -401,7 +414,6 @@ lgtv.on('connect', () => {
 		// Read active input
 		res.devices.forEach(element => {
 			if (element.connected && element.subCount > 0) appId = element.appId;
-			// console.log(element.label, element.subCount, element.connected);
 		});
 
 		if (appId == shield.hdmi && lgtv.appId == shield.hdmi) return;
@@ -413,8 +425,8 @@ lgtv.on('connect', () => {
 		}
 
 		// Set reciever to Switch input
-		// if (appId == nswitch.hdmi) broadlinks.sendCode(["inputswitch"]);
-		// else broadlinks.sendCode(["inputtv"]);
+		if (appId == nswitch.hdmi) broadlinks.sendCode(["inputswitch"]);
+		else broadlinks.sendCode(["inputtv"]);
 	});
 
 	lgtv.subscribe('ssap://com.webos.applicationManager/getForegroundAppInfo', (err, res) => {
@@ -480,28 +492,8 @@ lgtv.on('error', (err) => {
 });
 lgtv.toast = (message) => {
 	try {
-		// lgtv.request('ssap://com.webos.service.apiadapter/system_notifications/createToast', { message: message });
-		lgtv.request("ssap://com.webos.service.apiadapter/system_notifications/createToast", {
-			message: message,
-			onSuccess: function (args) {
-				console.log("success", args);
-			},
-			onFailure: function (args) {
-				console.log("fail", args);
-			}
-		});
-		// lgtv.request('ssap://com.webos.service.apiadapter/system_notifications/createAlert', {
-		// 	message: "RayBook is off, what to do you want to do?",
-		// 	"buttons": [
-		// 		{
-		// 			"label": "NVIDIA Shield"
-		// 		}, {
-		// 			"label": "Turn off TV"
-		// 		}
-		// 	]
-		// });
+		lgtv.request('ssap://com.webos.service.apiadapter/system_notifications/createToast', { message: message });
 	} catch (error) {
-		console.log(error);
 		console.log(`${ID()}\x1b[36mLG TV\x1b[0m: ❓ Error sending message -> \x1b[4m\x1b[37m${message}\x1b[0m`);
 	}
 }
@@ -550,6 +542,18 @@ lgtv.setHDMI = function (hdmi) {
 		if (hdmi == lgtv.appId) clearInterval(lgtv.hdmiInterval);
 		else if (lgtv.request) lgtv.request('ssap://system.launcher/launch', { id: hdmi });
 	}, 500);
+}
+// Get inputs
+lgtv.getInputs = function () {
+	return new Promise(resolve => {
+		lgtv.request('ssap://com.webos.service.apiadapter/tv/getExternalInputList', (err, res) => {
+			if (!err) {
+				resolve(res.devices);
+			}
+
+			resolve(false);
+		});
+	})
 }
 
 // openweathermap.org API to get current temperature
