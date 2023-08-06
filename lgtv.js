@@ -36,8 +36,8 @@ let
 
 	// Nintendo Switch
 	powerStateWithPing = require('nodejs-ping-wrapper'),
-	nswitch = new powerStateWithPing('192.168.1.106', 24),
-	rayBook = new powerStateWithPing('192.168.1.121', 40),
+	nswitch = new powerStateWithPing('192.168.1.106', 60),
+	rayBook = new powerStateWithPing('192.168.1.121', 60),
 
 	// Wheater Report
 	enableWeatherReport = false,
@@ -69,7 +69,7 @@ function getDateTime() {
 
 	var min = date.getMinutes();
 	min = (min < 10 ? "0" : "") + min;
-	``
+
 	var sec = date.getSeconds();
 	sec = (sec < 10 ? "0" : "") + sec;
 

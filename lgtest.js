@@ -3,19 +3,19 @@ let lgtv = require('lgtv2')({
 });
 
 lgtv.on('connect', () => {
-    lgtv.getAppStatus().then(res => console.log(res));
+    lgtv.getAppStatus().then(res => console.log("Get app status:", res));
     console.log(`🔌 Connected`);
 });
 
 lgtv.on('error', (err) => {
-    if (err) console.log(err);
+    if (err) console.log("Error:", err);
 });
 
 lgtv.getAppStatus = function () {
     return new Promise(resolve => {
-        lgtv.request(`ssap://com.webos.service.audio/playSound`, (err, res) => {
+        lgtv.request(`ssap://com.webos.service.hdmi/listAdapters`, (err, res) => {
             if (!err) resolve(res);
-            else resolve(false);
+            else resolve(err);
         });
     })
 }

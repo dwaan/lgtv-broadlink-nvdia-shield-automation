@@ -1,14 +1,6 @@
 {
 	"folders": [
 		{
-			"name": "[themessier - lgtv]",
-			"uri": "ssh://themessier/storage/homebridge/lgtv"
-		},
-		{
-			"name": "[themessier - adb]",
-			"uri": "ssh://themessier/storage/homebridge/lgtv/node_modules/nodejs-adb-wrapper"
-		},
-		{
 			"name": "lgtv",
 			"path": "."
 		},
@@ -22,11 +14,15 @@
 		},
 		{
 			"name": "broadlink",
-			"path": "../broadlinkjs/"
+			"path": "../broadlinkjs"
 		},
 		{
 			"name": "[broadlink]",
-			"path": "./node_modules/broadlinkjs-dw/"
+			"path": "node_modules/broadlinkjs-dw"
+		},
+		{
+			"name": "SSH FS - themessier",
+			"uri": "ssh://themessier/storage"
 		}
 	],
 	"settings": {}

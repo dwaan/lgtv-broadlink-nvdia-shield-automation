@@ -66,7 +66,7 @@ fs.readdir("../code/", (_, files) => {
 			});
 		} else {
 			b.on("deviceReady", (dev) => {
-				console.log("Found:", dev.type, dev.host.address);
+				console.log("Found:", dev.type, dev.host.address, dev.mac);
 
 				if (dev.type == "RMPro") {
 					console.log("Connected -> " + dev.host.address)
@@ -96,7 +96,7 @@ fs.readdir("../code/", (_, files) => {
 					} else if (learn == "listen") {
 						console.log("Waiting for input", "\r");
 
-						var timer = setInterval(function () {
+						setInterval(function () {
 							dev.checkData();
 						}, 500);
 
